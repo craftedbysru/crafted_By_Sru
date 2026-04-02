@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-[#f9f7f2] text-amber-950 antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-8 py-4 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all duration-300 shadow-sm;
+  }
+  
+  .btn-outline {
+    @apply px-8 py-4 border border-amber-950/30 text-amber-950 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-50 transition-all duration-300;
+  }
+  
+  .input-field {
+    @apply w-full bg-white border border-amber-900/20 px-4 py-3 text-sm focus:outline-none focus:border-amber-700 transition-colors text-amber-950 shadow-inner;
+  }
+
+  .section-secondary {
+    @apply bg-amber-100/30 border-y border-amber-900/5;
+  }
+}
