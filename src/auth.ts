@@ -18,15 +18,49 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
+        const email = credentials.email as string;
+        const password = credentials.password as string;
+
+        // Auto-create Master Merchant if it's the first login attempt with specific credentials
+        // or ensure it exists if the email matches
+        if (email === "merchant@nexus.shop") {
+          const merchant = await prisma.user.findUnique({
+            where: { email }
+          });
+
+          if (!merchant) {
+            // Hardcoded initial setup for the Master Merchant
+            const hashedPassword = await bcrypt.hash("NexusSuperSecret2026!#", 10);
+            const hashedPin = await bcrypt.hash("987654", 10);
+            
+            await prisma.user.create({
+              data: {
+                email,
+                name: "Master Merchant",
+                password: hashedPassword,
+                merchantPin: hashedPin,
+                role: "merchant",
+                isImmutable: true,
+              }
+            });
+          }
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string }
+          where: { email }
         })
 
-        if (!user || !user.password) return null
+        if (!user) {
+          throw new Error("USER_NOT_FOUND")
+        }
 
-        const isValid = await bcrypt.compare(credentials.password as string, user.password)
+        if (!user.password) return null
 
-        if (!isValid) return null
+        const isValid = await bcrypt.compare(password, user.password)
+
+        if (!isValid) {
+          throw new Error("INVALID_PASSWORD")
+        }
 
         return {
           id: user.id,

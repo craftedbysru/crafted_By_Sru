@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { z } from "zod";
+
+const orderStatusSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  status: z.string().min(1, "Status is required"), // More flexible
+});
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -21,15 +27,18 @@ export async function GET(req: Request) {
     }
 
     try {
-      const orders = await prisma.order.findMany({
+      const rlsClient = prisma.$withUser(userId);
+      const orders = await rlsClient.order.findMany({
         where: { customerId: customerUid },
         include: {
           customer: {
             select: {
               name: true,
               email: true,
+              addresses: true,
             },
           },
+          transactions: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -49,14 +58,17 @@ export async function GET(req: Request) {
   }
 
   try {
-    const orders = await prisma.order.findMany({
+    const rlsClient = prisma.$withUser(userId);
+    const orders = await rlsClient.order.findMany({
       include: {
         customer: {
           select: {
             name: true,
             email: true,
+            addresses: true,
           },
         },
+        transactions: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -78,15 +90,23 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const { orderId, status } = await req.json();
+    const body = await req.json();
+    const { orderId, status } = orderStatusSchema.parse(body);
+    const userId = (session.user as any).id;
+    
+    // RLS-aware client
+    const rlsClient = prisma.$withUser(userId);
 
-    const updatedOrder = await prisma.order.update({
+    const updatedOrder = await rlsClient.order.update({
       where: { id: orderId },
       data: { status },
     });
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
     console.error("Failed to update order status:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

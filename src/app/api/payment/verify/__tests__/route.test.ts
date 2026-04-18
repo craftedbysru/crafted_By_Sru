@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../route";
 import { NextResponse } from "next/server";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
 import prisma from "@/lib/prisma";
 import { verifyRazorpaySignature } from "@/lib/payment-utils";
 
@@ -14,15 +14,26 @@ vi.mock("@/lib/prisma", () => ({
     order: {
       create: vi.fn(),
     },
+    $transaction: vi.fn((cb) => cb({
+      product: {
+        findUnique: vi.fn().mockResolvedValue({ stock: 100 }),
+        update: vi.fn(),
+      },
+      order: {
+        create: vi.fn().mockResolvedValue({ id: "order_abc" }),
+      },
+    })),
   },
 }));
 
-vi.mock("@/lib/razorpay", () => ({
-  razorpay: {
-    orders: {
-      fetch: vi.fn(),
-    },
+const mockRazorpay = {
+  orders: {
+    fetch: vi.fn(),
   },
+};
+
+vi.mock("@/lib/razorpay", () => ({
+  getRazorpay: vi.fn(() => mockRazorpay),
 }));
 
 vi.mock("@/lib/payment-utils", () => ({
@@ -51,7 +62,8 @@ describe("POST /api/payment/verify", () => {
     const { auth } = await import("@/auth");
     (auth as any).mockResolvedValue({ user: { id: "user_123" } });
 
-    (razorpay.orders.fetch as any).mockResolvedValue({ amount: 10000 }); // 100 INR
+    const razorpay = getRazorpay() as any;
+    razorpay.orders.fetch.mockResolvedValue({ amount: 10000 }); // 100 INR
 
     const request = new Request("http://localhost/api/payment/verify", {
       method: "POST",
@@ -61,6 +73,8 @@ describe("POST /api/payment/verify", () => {
         razorpay_signature: "sig_789",
         orderData: {
           total: 50, // 50 INR, mismatch
+          items: [],
+          shippingAddress: {},
         },
       }),
     });
@@ -75,9 +89,9 @@ describe("POST /api/payment/verify", () => {
     const { auth } = await import("@/auth");
     (auth as any).mockResolvedValue({ user: { id: "user_123" } });
 
-    (razorpay.orders.fetch as any).mockResolvedValue({ amount: 5000 }); // 50 INR
+    const razorpay = getRazorpay() as any;
+    razorpay.orders.fetch.mockResolvedValue({ amount: 5000 }); // 50 INR
     (verifyRazorpaySignature as any).mockReturnValue(true);
-    (prisma.order.create as any).mockResolvedValue({ id: "order_abc" });
 
     const request = new Request("http://localhost/api/payment/verify", {
       method: "POST",
@@ -87,7 +101,7 @@ describe("POST /api/payment/verify", () => {
         razorpay_signature: "sig_789",
         orderData: {
           total: 50,
-          items: [],
+          items: [{ id: "prod_1", quantity: 1, name: "Test" }],
           shippingAddress: {},
         },
       }),
@@ -98,6 +112,6 @@ describe("POST /api/payment/verify", () => {
     const json = await response.json();
     expect(json.success).toBe(true);
     expect(json.orderId).toBe("order_abc");
-    expect(prisma.order.create).toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalled();
   });
 });

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
 import { auth } from "@/auth";
+import { z } from "zod";
+
+const createOrderSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  currency: z.string().default("INR"),
+});
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -9,7 +15,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { amount, currency = "INR" } = await request.json();
+    const body = await request.json();
+    const { amount, currency } = createOrderSchema.parse(body);
+    const razorpay = getRazorpay();
 
     const options = {
       amount: Math.round(amount * 100), // amount in smallest currency unit (paise for INR)

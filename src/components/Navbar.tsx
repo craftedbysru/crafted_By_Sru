@@ -99,10 +99,10 @@ export const Navbar = () => {
             <Link href="/dashboard" className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900 pb-1">Dashboard</Link>
           ) : (
             <>
-              <Link href="/" className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Home</Link>
+              <Link href="/" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Home</Link>
               <Link href="/catalog" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Catalog</Link>
               <Link href="/about" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Our Story</Link>
-              <Link href="/contact" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Concierge</Link>
+              <Link href="/contact" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Reach Out</Link>
             </>
           )}
         </div>
@@ -121,8 +121,11 @@ export const Navbar = () => {
           </Link>
           {session?.user ? (
             <div className="flex items-center gap-4">
-              <Link href="/account" className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
+              <Link href="/account" className="flex items-center gap-2 p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
                 <User size={18} />
+                <span className="hidden sm:inline text-[10px] uppercase tracking-widest font-bold">
+                  {session.user.name?.split(' ')[0]}
+                </span>
               </Link>
               <button onClick={handleLogout} className="text-[10px] uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity text-amber-900">Logout</button>
             </div>
@@ -153,7 +156,7 @@ export const Navbar = () => {
                   <Link href="/" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Home</Link>
                   <Link href="/catalog" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Catalog</Link>
                   <Link href="/about" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Our Story</Link>
-                  <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Concierge</Link>
+                  <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Reach Out</Link>
                 </>
               )}
               {!session?.user && (
@@ -208,7 +211,7 @@ export const Navbar = () => {
                       <div>
                         <p className="text-[10px] uppercase tracking-widest opacity-50 text-amber-900">{product.category}</p>
                         <h4 className="text-sm font-medium text-amber-950 group-hover:underline">{product.name}</h4>
-                        <p className="text-sm text-amber-900/70 mt-1">${product.price}</p>
+                        <p className="text-sm text-amber-900/70 mt-1">₹{product.price}</p>
                       </div>
                     </Link>
                   ))}

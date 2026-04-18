@@ -7,6 +7,7 @@ import { Package, User, LogOut, ChevronRight, ShoppingBag, Trash2 } from "lucide
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getPlaceholderImage } from "@/lib/images";
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
@@ -150,9 +151,9 @@ export default function AccountPage() {
             <div className="w-16 h-16 bg-amber-950 rounded-full flex items-center justify-center text-white border border-amber-900/10">
               <User size={32} />
             </div>
-            <div>
-              <h1 className="font-serif text-2xl text-amber-950">{session?.user?.name || "Member"}</h1>
-              <p className="text-xs text-amber-900/40 tracking-widest uppercase">{session?.user?.email}</p>
+            <div className="min-w-0">
+              <h1 className="font-serif text-2xl text-amber-950 truncate">{session?.user?.name || "Guest"}</h1>
+              <p className="text-xs text-amber-900/40 tracking-widest uppercase truncate">{session?.user?.email}</p>
             </div>
           </div>
 
@@ -235,7 +236,7 @@ export default function AccountPage() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Total Amount</p>
-                            <p className="text-sm font-medium text-amber-950">${order.total.toFixed(2)}</p>
+                            <p className="text-sm font-medium text-amber-950">₹{order.total.toFixed(2)}</p>
                           </div>
                         </div>
 
@@ -244,9 +245,9 @@ export default function AccountPage() {
                             <div key={idx} className="flex gap-4 items-center bg-white p-3 border border-amber-900/5">
                               <div className="w-12 h-16 bg-amber-50 overflow-hidden flex-shrink-0">
                                 <img 
-                                  src={item.image} 
+                                  src={item.image || getPlaceholderImage(item.category)} 
                                   alt={item.name} 
-                                  className="w-full h-full object-cover grayscale"
+                                  className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"
                                 />
                               </div>

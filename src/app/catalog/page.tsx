@@ -5,38 +5,103 @@ import { motion, AnimatePresence } from "motion/react";
 import { ShoppingBag, Search, SlidersHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { getPlaceholderImage } from "@/lib/images";
+import { ProductCardSlideshow } from "@/components/ProductCardSlideshow";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+import { useSearchParams } from "next/navigation";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export default function CollectionPage() {
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") || "All";
+  const initialSort = searchParams.get("sort") || "";
+
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [cartItems, setCartItems] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await fetch("/api/inventory");
-        const data = await response.json();
-        setProducts(data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to load catalog");
+        console.log("Fetching catalog data with params:", { initialSort, initialCategory });
+        
+        // Use exponential backoff for resilience in sandbox
+        const fetchResilient = async (url: string, retries = 3) => {
+          for (let i = 0; i < retries; i++) {
+            const res = await fetch(url);
+            if (res.ok) return res;
+            if (i < retries - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+          }
+          return fetch(url);
+        };
+
+        // Stagger parallel fetches to reduce connection pool surge
+        const productsRes = await fetchResilient(`/api/inventory${initialSort ? "?sort=" + initialSort : ""}`);
+        if (!productsRes.ok) throw new Error(`Inventory Error: ${productsRes.status}`);
+        
+        // Small delay to let pool breathe
+        await new Promise(r => setTimeout(r, 100));
+        
+        const categoriesRes = await fetchResilient("/api/categories");
+        if (!categoriesRes.ok) throw new Error(`Categories Error: ${categoriesRes.status}`);
+
+        const productsData = await productsRes.json();
+        const categoriesData = await categoriesRes.json();
+        
+        console.log("Products loaded:", productsData);
+        console.log("Categories loaded:", categoriesData);
+
+        setProducts(Array.isArray(productsData) ? productsData : []);
+        if (Array.isArray(categoriesData)) {
+          const catList = categoriesData.map((c: any) => ({ name: c.name, id: c.id }));
+          setCategories(["All", ...catList.map(c => c.name)]);
+          
+          // If deep link category was a name/id, try to resolve it
+          if (initialCategory !== "All") {
+            const matched = catList.find(c => c.id === initialCategory || c.name === initialCategory);
+            if (matched) setSelectedCategory(matched.name);
+          }
+        }
+      } catch (error: any) {
+        console.error("Error fetching data:", error);
+        toast.error(`Failed to load catalog: ${error.message}`);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
+
+    const loadCart = () => {
+      const savedCart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
+      setCartItems(savedCart);
+    };
+    loadCart();
+    window.addEventListener("sru_cart_change", loadCart);
+    return () => window.removeEventListener("sru_cart_change", loadCart);
   }, []);
 
-  const categories = ["All", ...Array.from(new Set(products.map(p => p.category)))];
+  const getProductCartCount = (productId: string) => {
+    const item = cartItems.find(i => i.id === productId);
+    return item ? item.quantity : 0;
+  };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredProducts = Array.isArray(products) ? products.filter(product => {
+    const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+    const categoryName = product.categoryRel?.name || product.category || "No Category";
+    const matchesCategory = selectedCategory === "All" || categoryName === selectedCategory;
     return matchesSearch && matchesCategory;
-  });
+  }) : [];
 
   const addToCart = (product: any) => {
     if (product.stock <= 0) {
@@ -74,35 +139,32 @@ export default function CollectionPage() {
 
   return (
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-        <div>
-          <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-4">The Curated Heritage Catalog</h1>
-          <p className="text-amber-900/50 text-sm tracking-widest uppercase">Meticulously crafted return gifts that honor Indian traditions.</p>
+      <div className="flex flex-col gap-12 mb-20">
+        <div className="max-w-3xl">
+          <h1 className="font-serif text-6xl md:text-8xl text-amber-950 mb-8 leading-[0.9]">
+            The Curated <br />
+            <span className="italic">Heritage Collection</span>
+          </h1>
+          <p className="text-amber-900/60 text-lg leading-relaxed max-w-xl">
+            Meticulously crafted return gifts that honor Indian traditions. Each piece tells a story of sustainable artistry and generational skill.
+          </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30 group-focus-within:text-amber-900 transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search catalog..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 pr-6 py-4 bg-white border border-amber-900/10 rounded-none w-full sm:w-64 focus:ring-1 focus:ring-amber-900/20 outline-none text-sm text-amber-950 shadow-sm"
-            />
-          </div>
-          <div className="relative group">
-            <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30 group-focus-within:text-amber-900 transition-colors" size={18} />
-            <select 
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="pl-12 pr-10 py-4 bg-white border border-amber-900/10 rounded-none w-full sm:w-48 focus:ring-1 focus:ring-amber-900/20 outline-none text-sm text-amber-950 appearance-none cursor-pointer shadow-sm"
+        <div className="flex flex-wrap gap-3">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={cn(
+                "px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all border",
+                selectedCategory === cat 
+                  ? "bg-amber-950 text-white border-amber-950" 
+                  : "bg-white text-amber-900/40 border-amber-900/10 hover:border-amber-900/30"
+              )}
             >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+              {cat === "All" ? "All Gifts" : cat}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -111,54 +173,121 @@ export default function CollectionPage() {
           <p className="text-amber-900/40 text-[10px] uppercase tracking-[0.3em]">No items found matching your criteria</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product, idx) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.05 }}
-                className="group"
-              >
-                <div className="relative aspect-[3/4] bg-amber-50 overflow-hidden mb-6">
-                  <Link href={`/product/${product.id}`}>
-                    <img 
-                      src={product.image || `https://picsum.photos/seed/${product.id}/600/800`} 
-                      alt={product.name} 
-                      className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ${product.stock === 0 ? "opacity-50" : ""}`}
-                      referrerPolicy="no-referrer"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[1px]">
-                        <span className="bg-white/90 px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-amber-950">Out of Stock</span>
-                      </div>
-                    )}
-                  </Link>
-                  {product.stock > 0 && (
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="absolute bottom-6 right-6 w-12 h-12 bg-white text-amber-950 flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 hover:bg-amber-950 hover:text-white"
-                    >
-                      <Plus size={20} />
-                    </button>
+            {filteredProducts.map((product, idx) => {
+              // Create a bento-like grid pattern
+              const isLarge = idx === 0;
+              const isMedium = idx === 3;
+              
+              return (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: idx * 0.05 }}
+                  className={cn(
+                    "group bg-white border border-amber-900/5 overflow-hidden flex flex-col",
+                    isLarge ? "md:col-span-8 md:row-span-2" : 
+                    isMedium ? "md:col-span-6" : "md:col-span-4"
                   )}
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-start">
-                    <p className="text-[10px] uppercase tracking-widest text-amber-900/40">{product.category}</p>
-                    <p className="text-sm font-medium text-amber-950">${product.price.toFixed(2)}</p>
+                >
+                  <div className={cn(
+                    "relative bg-amber-50 overflow-hidden",
+                    isLarge ? "flex-1" : "aspect-[4/3]"
+                  )}>
+                    <Link href={`/product/${product.id}`} className="block h-full w-full">
+                      <ProductCardSlideshow product={product} />
+                      {product.stock === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px] z-10">
+                          <div className="bg-red-600 text-white px-6 py-2 text-[10px] uppercase tracking-[0.3em] font-bold shadow-xl transform -rotate-3">
+                            Out of Stock
+                          </div>
+                        </div>
+                      )}
+                    </Link>
                   </div>
-                  <Link href={`/product/${product.id}`}>
-                    <h3 className="text-base font-serif text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h3>
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+                  
+                  <div className="p-8 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-amber-900/40 mb-1">
+                          {isLarge ? "Featured Heritage" : (product.categoryRel?.name || product.category || "No Category")}
+                        </p>
+                        <h3 className={cn(
+                          "font-serif text-amber-950 group-hover:text-amber-700 transition-colors",
+                          isLarge ? "text-3xl md:text-4xl" : "text-xl"
+                        )}>
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <p className="text-[10px] italic text-amber-900/40">Artisans of India</p>
+                          {getProductCartCount(product.id) > 0 && (
+                            <span className="text-[9px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                              {getProductCartCount(product.id)} in cart
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-medium text-amber-950">₹{product.price}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-900/40">Per Unit</p>
+                      </div>
+                    </div>
+
+                    {isLarge && (
+                      <p className="text-sm text-amber-900/60 leading-relaxed max-w-md line-clamp-2">
+                        {product.description}
+                      </p>
+                    )}
+
+                    <div className="pt-4 border-t border-amber-900/5 flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest font-bold text-amber-900/40">
+                          <div className="w-1 h-1 bg-amber-900/20 rounded-full" />
+                          100% Sustainable
+                        </div>
+                        <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest font-bold text-amber-900/40">
+                          <div className="w-1 h-1 bg-amber-900/20 rounded-full" />
+                          Fair Trade
+                        </div>
+                      </div>
+                      
+                      {product.stock > 0 && (
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            addToCart(product);
+                          }}
+                          className="flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold text-amber-950 hover:text-amber-700 transition-colors"
+                        >
+                          <Plus size={12} />
+                          Quick Add
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       )}
+
+      {/* Concierge Section */}
+      <div className="mt-32 bg-amber-50/50 p-12 md:p-24 text-center border border-amber-900/5 rounded-3xl">
+        <h2 className="font-serif text-4xl md:text-6xl text-amber-950 mb-6">Planning a Grand Celebration?</h2>
+        <p className="text-amber-900/60 text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
+          Our concierge team assists with custom packaging, artisan storytelling cards, and bulk logistical coordination for weddings and corporate events.
+        </p>
+        <Link 
+          href="/contact"
+          className="inline-block px-12 py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all shadow-xl shadow-amber-950/20"
+        >
+          Speak with our Concierge
+        </Link>
+      </div>
     </div>
   );
 }

@@ -37,7 +37,17 @@ function SignInForm() {
       });
 
       if (result?.error) {
-        toast.error("Invalid credentials. Please try again.");
+        if (result.error.includes("USER_NOT_FOUND")) {
+          toast.error("Account not found. Would you like to sign up?", {
+            action: {
+              label: "Sign Up",
+              onClick: () => router.push("/auth/signup")
+            },
+            duration: 5000
+          });
+        } else {
+          toast.error("Invalid credentials. Please try again.");
+        }
       } else {
         toast.success("Welcome back!");
         router.push(callbackUrl);
@@ -87,8 +97,11 @@ function SignInForm() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="you@example.com"
+              autoComplete="off"
+              name="email-field"
             />
           </div>
+
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40 flex items-center gap-2">
               <Lock size={12} />
@@ -101,6 +114,8 @@ function SignInForm() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="••••••••"
+              autoComplete="new-password"
+              name="password-field"
             />
           </div>
           <button 

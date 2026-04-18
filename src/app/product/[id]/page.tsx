@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ShoppingBag, ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getPlaceholderImage } from "@/lib/images";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -14,6 +15,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  const productImages = product ? (Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.imageUrl || getPlaceholderImage(product.category)]) : [];
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -39,7 +43,6 @@ export default function ProductDetail() {
   }, [params.id]);
 
   const addToCart = () => {
-    if (isAdded) return;
     if (product.stock <= 0) {
       toast.error("This product is out of stock");
       return;
@@ -104,14 +107,70 @@ export default function ProductDetail() {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="aspect-[4/5] bg-amber-50 overflow-hidden"
+          className="flex flex-col gap-6"
         >
-          <img 
-            src={product.image} 
-            alt={product.name} 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+          <div className="flex flex-col gap-4">
+            <div className="aspect-[4/5] bg-amber-50 overflow-hidden relative group">
+              <AnimatePresence mode="wait">
+                <motion.img 
+                  key={activeImageIdx}
+                  src={productImages[activeImageIdx]} 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  alt={product.name} 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </AnimatePresence>
+              
+              {productImages.length > 1 && (
+                <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => setActiveImageIdx(prev => (prev === 0 ? productImages.length - 1 : prev - 1))}
+                    className="p-2 bg-white/80 backdrop-blur-sm rounded-full text-amber-950 hover:bg-white transition-all shadow-sm"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <button 
+                    onClick={() => setActiveImageIdx(prev => (prev === productImages.length - 1 ? 0 : prev + 1))}
+                    className="p-2 bg-white/80 backdrop-blur-sm rounded-full text-amber-950 hover:bg-white transition-all shadow-sm"
+                  >
+                    <ArrowLeft size={20} className="rotate-180" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {productImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {productImages.map((img: string, idx: number) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setActiveImageIdx(idx)}
+                    className={`relative w-20 aspect-square bg-amber-50 overflow-hidden flex-shrink-0 border-2 transition-all ${
+                      activeImageIdx === idx ? "border-amber-900 scale-95" : "border-transparent"
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {product.videoUrl && (
+            <div className="bg-amber-50/50 overflow-hidden border border-amber-900/10 rounded-sm w-full">
+              <video 
+                src={product.videoUrl} 
+                controls 
+                playsInline
+                muted
+                className="w-full max-h-[70vh] object-contain"
+              />
+            </div>
+          )}
         </motion.div>
 
         <motion.div 
@@ -122,7 +181,7 @@ export default function ProductDetail() {
           <div>
             <p className="text-[11px] uppercase tracking-[0.4em] text-amber-700 mb-4">{product.category}</p>
             <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-4">{product.name}</h1>
-            <p className="text-2xl font-light text-amber-950">${product.price}</p>
+            <p className="text-2xl font-light text-amber-950">₹{product.price}</p>
           </div>
 
           <div className="h-px bg-amber-900/10 w-full"></div>
@@ -134,39 +193,36 @@ export default function ProductDetail() {
             <div className="flex flex-col gap-6 mt-4">
               {product.stock > 0 ? (
                 <>
-                  {!isAdded && (
-                    <div className="flex items-center gap-4">
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-amber-900">Quantity</span>
-                      <div className="flex items-center border border-amber-900/10">
-                        <button 
-                          onClick={decrementQty}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center text-sm font-medium text-amber-950">{quantity}</span>
-                        <button 
-                          onClick={incrementQty}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-widest opacity-40 text-amber-900">{product.stock} available</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-amber-900">Quantity</span>
+                    <div className="flex items-center border border-amber-900/10">
+                      <button 
+                        onClick={decrementQty}
+                        className="w-10 h-10 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
+                      >
+                        -
+                      </button>
+                      <span className="w-12 text-center text-sm font-medium text-amber-950">{quantity}</span>
+                      <button 
+                        onClick={incrementQty}
+                        className="w-10 h-10 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
+                      >
+                        +
+                      </button>
                     </div>
-                  )}
+                    <span className="text-[10px] uppercase tracking-widest opacity-40 text-amber-900">{product.stock} available</span>
+                  </div>
 
                   <button 
                     onClick={addToCart}
-                    disabled={isAdded}
                     className={`w-full py-5 text-[10px] uppercase tracking-[0.3em] font-bold transition-all flex items-center justify-center gap-3 ${
-                      isAdded ? "bg-green-600/10 text-green-700 cursor-not-allowed border border-green-600/20" : "bg-amber-950 text-white hover:bg-amber-900"
+                      isAdded ? "bg-amber-100 text-amber-900 border border-amber-900/20" : "bg-amber-950 text-white hover:bg-amber-900"
                     }`}
                   >
                     {isAdded ? (
                       <>
                         <Check size={16} />
-                        Added to Cart
+                        Added to Cart - Add More?
                       </>
                     ) : (
                       <>
@@ -181,7 +237,13 @@ export default function ProductDetail() {
                   Out of Stock
                 </div>
               )}
-              <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">Free shipping on orders over $200</p>
+              <div className="bg-amber-50 p-6 border border-amber-900/5">
+                <p className="text-[10px] uppercase tracking-widest text-center text-amber-900 font-bold mb-2">Bulk Orders</p>
+                <p className="text-xs text-center text-amber-900/60 leading-relaxed">
+                  For bulk orders and personalized gifting, please reach out to us at <span className="text-amber-950 font-bold">+91 9876543210</span> or email us at <span className="text-amber-950 font-bold">contact@craftedbysru.com</span>
+                </p>
+              </div>
+              <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">Free shipping on orders over ₹15,000</p>
             </div>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -3,10 +3,13 @@ export interface Product {
   name: string;
   price: number;
   description?: string;
+  sku?: string;
   category: string;
-  image?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   stock: number;
   featured: boolean;
+  isBestSeller: boolean;
   createdAt: Date;
 }
 

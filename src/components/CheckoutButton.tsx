@@ -11,6 +11,8 @@ interface CheckoutButtonProps {
     items: any[];
     total: number;
     shippingAddress: any;
+    packagingDetails?: string;
+    deliveryType?: string;
   };
   onSuccess?: (orderId: string) => void;
   className?: string;
@@ -60,7 +62,7 @@ export default function CheckoutButton({
 
       // 2. Open Razorpay checkout
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
         amount: order.amount,
         currency: order.currency,
         name: "Crafted by Sru",
@@ -112,6 +114,13 @@ export default function CheckoutButton({
       };
 
       const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any) {
+        console.error("Payment failed:", response.error);
+        toast.error(`Payment failed: ${response.error.description}`);
+        // Optionally log failed attempt to server
+      });
+
       rzp.open();
     } catch (error: any) {
       console.error("Checkout error:", error);

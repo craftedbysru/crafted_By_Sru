@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@theme {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-serif-alt: var(--font-serif-alt);
+}
+
 @layer base {
   body {
     @apply font-sans bg-[#f9f7f2] text-amber-950 antialiased;

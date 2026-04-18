@@ -82,6 +82,8 @@ export default function MerchantLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="merchant@craftedbysru.com"
+              autoComplete="off"
+              name="merchant-email"
             />
           </div>
           <div className="space-y-2">
@@ -96,6 +98,8 @@ export default function MerchantLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="••••••••"
+              autoComplete="new-password"
+              name="merchant-password"
             />
           </div>
           <button 

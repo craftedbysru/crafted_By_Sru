@@ -4,7 +4,9 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import CheckoutButton from "@/components/CheckoutButton";
+import { getPlaceholderImage } from "@/lib/images";
 
 export default function CartPage() {
   const [cart, setCart] = useState<any[]>([]);
@@ -26,6 +28,10 @@ export default function CartPage() {
     const newCart = cart.map((item) => {
       if (item.id === id) {
         const newQty = Math.max(1, item.quantity + delta);
+        if (newQty > (item.stock || 999)) {
+          toast.error(`Only ${item.stock} items available in stock.`);
+          return item;
+        }
         return { ...item, quantity: newQty };
       }
       return item;
@@ -87,19 +93,19 @@ export default function CartPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="flex gap-6 pb-8 border-b border-amber-900/10"
               >
-                <div className="w-24 h-32 bg-amber-50 overflow-hidden flex-shrink-0">
+                <Link href={`/product/${item.id}`} className="w-24 h-32 bg-amber-50 overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity">
                   <img 
-                    src={item.image} 
+                    src={item.imageUrl || item.image || getPlaceholderImage(item.category)} 
                     alt={item.name} 
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
-                </div>
+                </Link>
                 <div className="flex-grow flex flex-col justify-between py-1">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest opacity-50 mb-1 text-amber-900">{item.category}</p>
-                      <h3 className="text-base font-medium text-amber-950">{item.name}</h3>
+                      <Link href={`/product/${item.id}`} className="text-base font-medium text-amber-950 hover:underline">{item.name}</Link>
                     </div>
                     <button 
                       onClick={() => removeItem(item.id)}
@@ -125,7 +131,7 @@ export default function CartPage() {
                         <Plus size={12} />
                       </button>
                     </div>
-                    <p className="text-sm font-medium text-amber-950">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-sm font-medium text-amber-950">₹{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               </motion.div>
@@ -139,43 +145,26 @@ export default function CartPage() {
           <div className="flex flex-col gap-4">
             <div className="flex justify-between text-sm">
               <span className="text-amber-900/60">Subtotal</span>
-              <span className="text-amber-950">${subtotal.toFixed(2)}</span>
+              <span className="text-amber-950">₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-amber-900/60">Shipping</span>
-              <span className="text-amber-950">{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+              <span className="text-amber-950">{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
             </div>
             <div className="h-px bg-amber-900/10 w-full my-2"></div>
             <div className="flex justify-between text-lg font-medium">
               <span className="text-amber-950">Total</span>
-              <span className="text-amber-950">${total.toFixed(2)}</span>
+              <span className="text-amber-950">₹{total.toFixed(2)}</span>
             </div>
           </div>
 
-          <CheckoutButton
-            amount={total}
-            orderData={{
-              items: cart,
-              total: total,
-              shippingAddress: {
-                street: "Test Street",
-                city: "Test City",
-                state: "Test State",
-                zipCode: "123456",
-                country: "India"
-              }
-            }}
-            onSuccess={(orderId) => {
-              localStorage.removeItem("sru_cart");
-              window.dispatchEvent(new Event("sru_cart_change"));
-              // router.push is handled by the button if onSuccess is not provided, 
-              // but here we might want to do extra cleanup
-            }}
+          <Link
+            href="/checkout"
             className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all flex items-center justify-center gap-3"
           >
-            Proceed to Payment
+            Proceed to Checkout
             <ArrowRight size={16} />
-          </CheckoutButton>
+          </Link>
 
           <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">
             Secure payment powered by Razorpay

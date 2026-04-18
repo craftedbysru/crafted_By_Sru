@@ -1,3 +1,4 @@
+// Refreshed: 2026-04-18
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -18,7 +19,13 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?   // For credentials auth
-  role          String    @default("customer") // customer, admin
+  role          String    @default("customer") // customer, merchant, admin
+  phone         String?
+  dateOfBirth   DateTime?
+  gender        String?
+  isImmutable   Boolean   @default(false)      // Prevents deletion/edit for master merchant
+  merchantPin   String?   // Extra layer of auth for merchant (hashed)
+  cart          Json?     // Persistent cart data
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
@@ -73,15 +80,39 @@ model Address {
   userId    String
 }
 
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model WebsiteContent {
+  id           String   @id @default(uuid())
+  page         String   // e.g., "home", "catalog"
+  section      String   // e.g., "hero", "soul-of-sru"
+  content      Json     // Flexible JSON for text, images, etc.
+  displayOrder Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([page, section])
+}
+
 model Product {
   id          String   @id @default(uuid())
   name        String
   price       Float
   description String?
-  category    String
-  image       String?  @db.Text
+  sku         String?
+  category    String?  // Legacy or display name
+  categoryId  String?
+  categoryRel Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  imageUrl    String?  @map("image_url") @db.Text
+  images      Json?    // Array of strings: ["url1", "url2", ...]
+  videoUrl    String?  @map("video_url") @db.Text
   stock       Int      @default(0)
   featured    Boolean  @default(false)
+  isBestSeller Boolean @default(false)
   createdAt   DateTime @default(now())
 }
 
@@ -91,10 +122,27 @@ model Order {
   customerId      String
   items           Json     // Storing items as JSON for simplicity
   total           Float
-  status          String   @default("pending")
-  paymentId       String?  // Razorpay payment ID
-  razorpayOrderId String?  // Razorpay order ID
-  paymentStatus   String   @default("unpaid") // unpaid, paid, failed
+  status          String   @default("pending") // pending, processing, shipped, delivered, cancelled
+  paymentStatus   String   @default("unpaid") // unpaid, paid, failed, refunded
   shippingAddress Json
+  packagingDetails String?
+  deliveryType    String?
+  transactions    Transaction[]
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  order            Order    @relation(fields: [orderId], references: [id])
+  orderId          String
+  amount           Float
+  currency         String   @default("INR")
+  status           String   // success, failed, pending, refunded
+  provider         String   // e.g., "razorpay"
+  providerPaymentId String?  @unique
+  providerOrderId   String?
+  errorDetails     String?
+  metadata         Json?    // For IP, device info, browser info
+  createdAt        DateTime @default(now())
 }

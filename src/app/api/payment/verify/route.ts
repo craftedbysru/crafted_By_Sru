@@ -2,7 +2,21 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { verifyRazorpaySignature } from "@/lib/payment-utils";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
+import { z } from "zod";
+
+const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+  orderData: z.object({
+    items: z.array(z.any()),
+    total: z.number().positive(),
+    shippingAddress: z.any(),
+    packagingDetails: z.string().optional(),
+    deliveryType: z.string().optional(),
+  }),
+});
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -11,12 +25,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    const body = await request.json();
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
       razorpay_signature,
-      orderData // items, total, shippingAddress, etc.
-    } = await request.json();
+      orderData 
+    } = verifyPaymentSchema.parse(body);
+
+    const razorpay = getRazorpay();
 
     // Fetch the order from Razorpay to verify the amount
     const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
@@ -33,21 +50,62 @@ export async function POST(request: Request) {
     );
 
     if (isAuthentic) {
-      // Payment is verified, now create the order in the database
-      const order = await prisma.order.create({
-        data: {
-          customerId: session.user?.id!,
-          items: orderData.items,
-          total: orderData.total,
-          status: "Processing",
-          paymentId: razorpay_payment_id,
-          razorpayOrderId: razorpay_order_id,
-          paymentStatus: "paid",
-          shippingAddress: orderData.shippingAddress,
-        },
+      // Payment is verified, now create the order and update stock in a transaction
+      const userId = session.user?.id!;
+      const rlsClient = prisma.$withUser(userId);
+
+      const result = await rlsClient.$transaction(async (tx) => {
+        // 1. Check stock for all items
+        for (const item of orderData.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.id }
+          });
+          
+          if (!product || product.stock < item.quantity) {
+            throw new Error(`Insufficient stock for product ${item.name}`);
+          }
+        }
+
+        // 2. Decrement stock
+        for (const item of orderData.items) {
+          await tx.product.update({
+            where: { id: item.id },
+            data: { stock: { decrement: item.quantity } }
+          });
+        }
+
+        // 3. Create the order and the associated transaction
+        const order = await tx.order.create({
+          data: {
+            customerId: userId,
+            items: orderData.items,
+            total: orderData.total,
+            status: "Processing",
+            paymentStatus: "paid",
+            shippingAddress: orderData.shippingAddress,
+            packagingDetails: orderData.packagingDetails,
+            deliveryType: orderData.deliveryType,
+            transactions: {
+              create: {
+                amount: orderData.total,
+                status: "success",
+                provider: "razorpay",
+                providerPaymentId: razorpay_payment_id,
+                providerOrderId: razorpay_order_id,
+                metadata: {
+                  razorpay_signature,
+                  userAgent: request.headers.get("user-agent"),
+                  ip: request.headers.get("x-forwarded-for"),
+                }
+              }
+            }
+          },
+        });
+
+        return order;
       });
 
-      return NextResponse.json({ success: true, orderId: order.id });
+      return NextResponse.json({ success: true, orderId: result.id });
     } else {
       return new NextResponse("Invalid signature", { status: 400 });
     }

@@ -105,7 +105,8 @@ function SignUpForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-              placeholder="John Doe"
+              placeholder="Enter your name"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -120,6 +121,7 @@ function SignUpForm() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="you@example.com"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -135,6 +137,7 @@ function SignUpForm() {
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               placeholder="••••••••"
               minLength={6}
+              autoComplete="new-password"
             />
           </div>
           <button 

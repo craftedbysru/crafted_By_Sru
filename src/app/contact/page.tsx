@@ -4,9 +4,22 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Send, MapPin, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { useCMS } from "@/hooks/useCMS";
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
+  const { content: cmsContent, loading: dataLoading, getSection } = useCMS("contact");
+
+  const headerContent = getSection("header", {
+    title: "Get in Touch",
+    description: "Whether you have a question about our catalog, a custom request, or just want to say hello, we'd love to hear from you."
+  });
+
+  const detailsContent = getSection("details", {
+    email: "concierge@craftedbysru.com",
+    phone: "+91 98765 43210",
+    address: "Artisan Quarter, Creative District, Mumbai, India"
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,17 +31,25 @@ export default function ContactPage() {
     }, 1500);
   };
 
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-[10px] uppercase tracking-[0.5em] animate-pulse text-amber-900">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+    <div className="pt-40 pb-20 px-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-12">Get in Touch</h1>
+          <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-12">{headerContent.title}</h1>
           <p className="text-amber-900/60 mb-16 max-w-md leading-relaxed">
-            Whether you have a question about our catalog, a custom request, or just want to say hello, we'd love to hear from you.
+            {headerContent.description}
           </p>
 
           <div className="space-y-12">
@@ -38,7 +59,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900 mb-2">Email Us</h3>
-                <p className="text-amber-950 font-medium">hello@craftedbysru.com</p>
+                <p className="text-amber-950 font-medium">{detailsContent.email}</p>
               </div>
             </div>
 
@@ -48,7 +69,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900 mb-2">Call Us</h3>
-                <p className="text-amber-950 font-medium">+91 98765 43210</p>
+                <p className="text-amber-950 font-medium">{detailsContent.phone}</p>
               </div>
             </div>
 
@@ -58,7 +79,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900 mb-2">Visit Us</h3>
-                <p className="text-amber-950 font-medium max-w-[200px]">123 Artisan Lane, Creative District, Mumbai, India</p>
+                <p className="text-amber-950 font-medium max-w-[200px]">{detailsContent.address}</p>
               </div>
             </div>
           </div>
@@ -104,6 +125,25 @@ export default function ContactPage() {
             </button>
           </form>
         </motion.div>
+      </div>
+
+      {/* Dynamic CMS Sections for Contact Page */}
+      <div className="mt-32 space-y-32">
+        {cmsContent.filter(c => !["header", "details", "info"].includes(c.section)).map((section, idx) => (
+          <section key={section.id} className="py-20 border-t border-amber-950/5">
+            {section.content.title && (
+              <h2 className="font-serif text-4xl text-amber-950 mb-8">{section.content.title}</h2>
+            )}
+            {section.content.description && (
+              <p className="text-amber-900/60 max-w-2xl leading-relaxed">{section.content.description}</p>
+            )}
+            {section.content.image && (
+              <div className="mt-12 aspect-video overflow-hidden bg-amber-50">
+                <img src={section.content.image} alt={section.content.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+          </section>
+        ))}
       </div>
     </div>
   );

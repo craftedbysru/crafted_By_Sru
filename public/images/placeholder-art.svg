@@ -1,0 +1,7 @@
+<svg width="800" height="1200" viewBox="0 0 800 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="1200" fill="#FDF8F3"/>
+  <rect x="150" y="200" width="500" height="800" stroke="#8B4513" stroke-width="4" fill="white" fill-opacity="0.8"/>
+  <path d="M200 300L600 700M200 700L600 300" stroke="#8B4513" stroke-width="0.5" stroke-opacity="0.2"/>
+  <circle cx="400" cy="500" r="150" stroke="#8B4513" stroke-width="1" fill="#F5E6D3" fill-opacity="0.3"/>
+  <text x="400" y="1100" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#8B4513" font-weight="bold" letter-spacing="0.2em">ART</text>
+</svg>

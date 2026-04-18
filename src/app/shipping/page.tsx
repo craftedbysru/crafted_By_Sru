@@ -1,66 +1,79 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 
 export default function ShippingPage() {
+  const [cmsContent, setCmsContent] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const res = await fetch("/api/content?page=shipping");
+        if (res.ok) {
+          const data = await res.json();
+          setCmsContent(data);
+        }
+      } catch (error) {
+        console.error("Error fetching shipping page content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
+
+  const getContent = (section: string, defaults: any) => {
+    const item = cmsContent.find(c => c.section === section);
+    return item ? { ...defaults, ...item.content } : defaults;
+  };
+
+  const mainContent = getContent("main", {
+    title: "Shipping & Delivery",
+    intro: "We deliver our artisanal treasures worldwide with the utmost care.",
+    details: "Standard shipping takes 5-7 business days across India. International orders may vary."
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-[10px] uppercase tracking-[0.5em] animate-pulse text-amber-900">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
+    <div className="pt-40 pb-20 px-6 max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <h1 className="font-serif text-5xl text-amber-950 mb-12">Shipping & Delivery</h1>
+        <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-12">{mainContent.title}</h1>
         
-        <div className="prose prose-amber max-w-none space-y-8 text-amber-900/80 leading-relaxed">
+        <div className="prose prose-amber max-w-none space-y-12 text-amber-900/80 leading-relaxed text-lg">
           <section>
-            <h2 className="font-serif text-2xl text-amber-950 mb-4">Our Commitment</h2>
-            <p>
-              At Crafted by Sru, we take immense pride in the safe and timely delivery of our curated artisan creations. 
-              Each piece is meticulously packed to ensure it reaches you in perfect condition, preserving the artistry 
-              and heritage it represents.
-            </p>
+            <p>{mainContent.intro}</p>
+            <p className="mt-6">{mainContent.details}</p>
           </section>
 
-          <section>
-            <h2 className="font-serif text-2xl text-amber-950 mb-4">Processing Times</h2>
-            <p>
-              As many of our items are handcrafted or made-to-order by master artisans, processing times may vary:
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li><strong>In-Stock Items:</strong> Dispatched within 2-3 business days.</li>
-              <li><strong>Custom/Artisan Pieces:</strong> May require 7-14 business days for preparation.</li>
-              <li><strong>Bulk/Return Gift Orders:</strong> Timeline will be discussed during the concierge consultation.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-2xl text-amber-950 mb-4">Delivery Estimates</h2>
-            <p>
-              We partner with premium courier services to ensure reliable delivery across India and internationally:
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Domestic (India):</strong> 3-7 business days after dispatch.</li>
-              <li><strong>International:</strong> 10-21 business days depending on the destination and customs processing.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-2xl text-amber-950 mb-4">Shipping Charges</h2>
-            <p>
-              Shipping costs are calculated at checkout based on the weight, dimensions, and destination of your order. 
-              We offer complimentary domestic shipping on orders above ₹5,000.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-2xl text-amber-950 mb-4">Tracking Your Order</h2>
-            <p>
-              Once your order is dispatched, you will receive a confirmation email with a tracking number. 
-              You can also track your order status through your account dashboard.
-            </p>
-          </section>
+          {/* Dynamic CMS Sections for Shipping Page */}
+          <div className="space-y-16">
+            {cmsContent.filter(c => !["main"].includes(c.section)).map((section, idx) => (
+              <section key={section.id} className="pt-12 border-t border-amber-950/5">
+                {section.content.title && (
+                  <h2 className="font-serif text-3xl text-amber-950 mb-6">{section.content.title}</h2>
+                )}
+                {section.content.description && (
+                  <p className="whitespace-pre-line">{section.content.description}</p>
+                )}
+                {section.content.content && (
+                  <p className="mt-4">{section.content.content}</p>
+                )}
+              </section>
+            ))}
+          </div>
         </div>
       </motion.div>
     </div>
