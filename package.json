@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "prisma generate && prisma db push && next dev -p 3000",
-    "build": "prisma generate && next build && next export",
+    "build": "prisma generate && next build",
     "start": "next start -p 3000",
     "lint": "next lint",
     "test": "vitest run"
