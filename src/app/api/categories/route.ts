@@ -3,11 +3,13 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { withDbRetry } from "@/lib/db-retry";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     console.log("Categories GET request received");
 
-    const categories = await withDbRetry(() => prisma.category.findMany({
+    const categoriesData = await withDbRetry(() => prisma.category.findMany({
       orderBy: { name: "asc" },
       include: {
         products: {
@@ -19,6 +21,8 @@ export async function GET() {
         }
       }
     }));
+
+    const categories = categoriesData as any[];
 
     // Format categories to include an 'image' field for convenience
     const formattedCategories = categories.map(cat => {

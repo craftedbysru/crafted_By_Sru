@@ -14,10 +14,12 @@ export async function GET(request: Request) {
     const query: any = {};
     if (page) query.page = page;
 
-    const dbContent = await withDbRetry(() => prisma.websiteContent.findMany({
+    const dbContentResult = await withDbRetry(() => prisma.websiteContent.findMany({
       where: query,
       orderBy: { displayOrder: "asc" }
     }));
+    
+    const dbContent = dbContentResult as any[];
 
   // If page is specified, merge DB content with defaults for that page
   if (page) {
