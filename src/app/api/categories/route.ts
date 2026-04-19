@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { withDbRetry } from "@/lib/db-retry";
 
 export async function GET() {
   try {
     console.log("Categories GET request received");
 
-    const categories = await prisma.category.findMany({
+    const categories = await withDbRetry(() => prisma.category.findMany({
       orderBy: { name: "asc" },
       include: {
         products: {
@@ -17,7 +18,7 @@ export async function GET() {
           }
         }
       }
-    });
+    }));
 
     // Format categories to include an 'image' field for convenience
     const formattedCategories = categories.map(cat => {

@@ -399,66 +399,111 @@ export default function Home() {
         </section>
       ))}
 
-      {/* Recent Curations Section - Restored to the original horizontal flow design */}
-      <section className="py-32 bg-amber-50/50 relative overflow-hidden">
-        <div className="max-w-[1400px] mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
+      {/* Recent Curations Section - Redesigned to a sophisticated Bento Gallery */}
+      <section className="py-32 bg-amber-50/30 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
             <div className="max-w-xl">
               <p className="text-[10px] uppercase tracking-[0.5em] text-amber-900/40 mb-4 font-bold">Chronicles of Craft</p>
               <h2 className="font-serif-alt text-6xl text-amber-950 italic">{recentContent.title}</h2>
+              <p className="text-amber-900/60 mt-6 text-lg">Our latest curations, freshly gathered from India's most talented artisan clusters.</p>
             </div>
             <Link href="/catalog?sort=desc" className="group flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-amber-950 border-b border-amber-950/20 pb-1">
               Explore the Archive <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
-          <div className="flex gap-10 overflow-x-auto pb-12 no-scrollbar items-start snap-x snap-mandatory">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 min-h-[800px]">
             {recentProducts.length > 0 ? (
-              recentProducts.map((product, i) => (
+              <>
+                {/* Large Featured Card */}
                 <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="min-w-[320px] md:min-w-[420px] snap-start"
+                  className="md:col-span-12 lg:col-span-7 relative group overflow-hidden bg-white shadow-sm border border-amber-900/5 aspect-square lg:aspect-auto"
                 >
-                  <Link href={`/product/${product.id}`} className="block group">
-                    <div className="aspect-[4/5] bg-white overflow-hidden mb-8 shadow-sm border border-amber-900/5 relative">
-                      <div className="absolute inset-0 bg-amber-950/0 group-hover:bg-amber-950/20 transition-colors z-10" />
-                      <img 
-                        src={product.imageUrl || getPlaceholderImage(product.category)} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-all duration-[1.5s]"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                         <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-white mb-2">Discover Item</span>
-                         <div className="w-10 h-[1px] bg-white/40" />
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-center">
-                       <h3 className="font-serif text-3xl text-amber-950 leading-tight group-hover:text-amber-700 transition-colors">{product.name}</h3>
-                       <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-900/30">Artisans of {product.category || "India"}</p>
+                  <Link href={`/product/${recentProducts[0].id}`} className="block h-full group">
+                    <img 
+                      src={recentProducts[0].imageUrl || getPlaceholderImage(recentProducts[0].category)} 
+                      alt={recentProducts[0].name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-all duration-[2s]"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-12 bg-gradient-to-t from-amber-950/80 to-transparent text-white translate-y-6 group-hover:translate-y-0 transition-transform duration-700">
+                      <p className="text-[10px] uppercase tracking-[0.4em] mb-4 opacity-70">New Premiere</p>
+                      <h3 className="font-serif text-5xl mb-4">{recentProducts[0].name}</h3>
+                      <p className="text-white/60 text-sm max-w-md line-clamp-2">{recentProducts[0].description}</p>
                     </div>
                   </Link>
                 </motion.div>
-              ))
+
+                {/* Staggered Secondary Cards */}
+                <div className="md:col-span-12 lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-8">
+                  {recentProducts.slice(1, 3).map((product, i) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 + i * 0.1 }}
+                      className="group relative bg-white border border-amber-900/5 aspect-[4/3] sm:aspect-square lg:aspect-[16/10] overflow-hidden"
+                    >
+                      <Link href={`/product/${product.id}`} className="block h-full">
+                        <img 
+                          src={product.imageUrl || getPlaceholderImage(product.category)} 
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-[1.5s]"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-amber-950/0 group-hover:bg-amber-950/40 transition-colors duration-700 p-8 flex flex-col justify-end">
+                          <div className="translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                            <h4 className="font-serif text-2xl text-white mb-1">{product.name}</h4>
+                            <p className="text-[10px] uppercase tracking-widest text-white/60">Explore Details</p>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Bottom Row */}
+                <div className="md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+                   {recentProducts.slice(3, 7).map((product, i) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + i * 0.1 }}
+                      className="group flex flex-col gap-6"
+                    >
+                      <Link href={`/product/${product.id}`} className="block">
+                        <div className="aspect-[3/4] overflow-hidden bg-white border border-amber-900/5 relative">
+                           <img 
+                            src={product.imageUrl || getPlaceholderImage(product.category)} 
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-all duration-[1.2s]"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                            <ArrowRight size={14} className="text-amber-950" />
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <h4 className="font-serif text-xl text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h4>
+                          <p className="text-[9px] uppercase tracking-widest text-amber-900/40 mt-1 font-bold">Artisan Collection</p>
+                        </div>
+                      </Link>
+                    </motion.div>
+                   ))}
+                </div>
+              </>
             ) : (
-              <div className="w-full py-24 text-center border border-dashed border-amber-900/10">
-                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Our latest curators are being prepared for unveiling...</p>
+              <div className="col-span-12 py-32 text-center border border-dashed border-amber-900/10 rounded-2xl">
+                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Preparing our latest artisanal chronicles...</p>
               </div>
             )}
-            
-            {/* End Cap */}
-            <div className="min-w-[200px] flex items-center justify-center h-full self-center">
-              <Link href="/catalog" className="flex flex-col items-center gap-4 text-amber-900/30 hover:text-amber-900 transition-colors group">
-                <div className="w-16 h-16 rounded-full border border-current flex items-center justify-center group-hover:bg-amber-950 group-hover:text-white transition-all">
-                  <ArrowRight size={24} />
-                </div>
-                <span className="text-[10px] uppercase tracking-widest font-bold">Full Archive</span>
-              </Link>
-            </div>
           </div>
         </div>
       </section>

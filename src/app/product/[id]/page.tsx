@@ -8,6 +8,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { getPlaceholderImage } from "@/lib/images";
 
+import { useCMS } from "@/hooks/useCMS";
+
 export default function ProductDetail() {
   const params = useParams();
   const router = useRouter();
@@ -17,7 +19,17 @@ export default function ProductDetail() {
   const [isAdded, setIsAdded] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
-  const productImages = product ? (Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.imageUrl || getPlaceholderImage(product.category)]) : [];
+  const { getSection: getContactCMS } = useCMS("contact");
+  const contactInfo = getContactCMS("contact-info", {
+    email: "contact@craftedbysru.com",
+    phone: "+91 9876543210"
+  });
+
+  const productImages = product ? (
+    Array.isArray(product.images) && product.images.length > 0 
+      ? product.images 
+      : [product.imageUrl || product.image || getPlaceholderImage(product.category)]
+  ) : [];
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -39,7 +51,7 @@ export default function ProductDetail() {
         setLoading(false);
       }
     };
-    fetchProduct();
+    if (params.id) fetchProduct();
   }, [params.id]);
 
   const addToCart = () => {
@@ -240,7 +252,7 @@ export default function ProductDetail() {
               <div className="bg-amber-50 p-6 border border-amber-900/5">
                 <p className="text-[10px] uppercase tracking-widest text-center text-amber-900 font-bold mb-2">Bulk Orders</p>
                 <p className="text-xs text-center text-amber-900/60 leading-relaxed">
-                  For bulk orders and personalized gifting, please reach out to us at <span className="text-amber-950 font-bold">+91 9876543210</span> or email us at <span className="text-amber-950 font-bold">contact@craftedbysru.com</span>
+                  For bulk orders and personalized gifting, please reach out to us at <span className="text-amber-950 font-bold">{contactInfo.phone}</span> or email us at <span className="text-amber-950 font-bold">{contactInfo.email}</span>
                 </p>
               </div>
               <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">Free shipping on orders over ₹15,000</p>

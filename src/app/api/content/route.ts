@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { CMS_DEFAULTS } from "@/lib/cms-defaults";
+import { withDbRetry } from "@/lib/db-retry";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get("page");
-  
-  const query: any = {};
-  if (page) query.page = page;
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get("page");
+    
+    const query: any = {};
+    if (page) query.page = page;
 
-  const dbContent = await prisma.websiteContent.findMany({
-    where: query,
-    orderBy: { displayOrder: "asc" }
-  });
+    const dbContent = await withDbRetry(() => prisma.websiteContent.findMany({
+      where: query,
+      orderBy: { displayOrder: "asc" }
+    }));
 
   // If page is specified, merge DB content with defaults for that page
   if (page) {
@@ -46,6 +50,10 @@ export async function GET(request: Request) {
 
   allContent.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   return NextResponse.json(allContent);
+  } catch (error: any) {
+    console.error("Error fetching content:", error);
+    return NextResponse.json({ error: "Failed to fetch content", details: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -61,7 +69,7 @@ export async function POST(request: Request) {
     // RLS-aware client
     const rlsClient = prisma.$withUser(userId);
     
-    const updatedContent = await rlsClient.websiteContent.upsert({
+    const updatedContent = await withDbRetry(() => rlsClient.websiteContent.upsert({
       where: {
         page_section: { page, section }
       },
@@ -75,7 +83,7 @@ export async function POST(request: Request) {
         content,
         displayOrder: displayOrder !== undefined ? parseInt(displayOrder) : 0
       },
-    });
+    }));
     
     return NextResponse.json(updatedContent);
   } catch (error) {
@@ -97,11 +105,11 @@ export async function DELETE(request: Request) {
     // RLS-aware client
     const rlsClient = prisma.$withUser(userId);
 
-    await rlsClient.websiteContent.delete({
+    await withDbRetry(() => rlsClient.websiteContent.delete({
       where: {
         page_section: { page, section }
       }
-    });
+    }));
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete content" }, { status: 400 });

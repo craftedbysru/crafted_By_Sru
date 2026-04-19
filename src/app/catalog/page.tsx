@@ -12,11 +12,13 @@ import { twMerge } from "tailwind-merge";
 
 import { useSearchParams } from "next/navigation";
 
+import { Suspense } from "react";
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function CollectionPage() {
+function CatalogContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "All";
   const initialSort = searchParams.get("sort") || "";
@@ -37,8 +39,10 @@ export default function CollectionPage() {
         // Use exponential backoff for resilience in sandbox
         const fetchResilient = async (url: string, retries = 3) => {
           for (let i = 0; i < retries; i++) {
-            const res = await fetch(url);
-            if (res.ok) return res;
+            try {
+              const res = await fetch(url);
+              if (res.ok) return res;
+            } catch (e) {}
             if (i < retries - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
           }
           return fetch(url);
@@ -88,7 +92,7 @@ export default function CollectionPage() {
     loadCart();
     window.addEventListener("sru_cart_change", loadCart);
     return () => window.removeEventListener("sru_cart_change", loadCart);
-  }, []);
+  }, [initialSort, initialCategory]);
 
   const getProductCartCount = (productId: string) => {
     const item = cartItems.find(i => i.id === productId);
@@ -289,5 +293,17 @@ export default function CollectionPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function CollectionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-[10px] uppercase tracking-[0.5em] animate-pulse text-amber-900">Initiating Collection...</div>
+      </div>
+    }>
+      <CatalogContent />
+    </Suspense>
   );
 }

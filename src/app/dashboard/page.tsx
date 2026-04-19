@@ -162,16 +162,14 @@ export default function MerchantDashboard() {
     setLoading(true);
     try {
       const role = (session?.user as any)?.role;
-      const requests = [
-        fetch("/api/inventory"),
-        fetch("/api/orders"),
-        fetch("/api/categories")
-      ];
-      if (role === "admin" || role === "merchant") {
-        requests.push(fetch("/api/content"));
-      }
       
-      const responses = await Promise.all(requests);
+      const responses = await Promise.all([
+        fetchWithRetry("/api/inventory"),
+        fetchWithRetry("/api/orders"),
+        fetchWithRetry("/api/categories"),
+        (role === "admin" || role === "merchant") ? fetchWithRetry("/api/content") : Promise.resolve(null)
+      ]);
+      
       const productsData = await responses[0].json();
       const ordersData = await responses[1].json();
       const categoriesData = await responses[2].json();

@@ -1,8 +1,9 @@
 import prisma from "@/lib/prisma";
 import { Order } from "../types";
+import { withDbRetry } from "@/lib/db-retry";
 
 export const createOrder = async (orderData: any) => {
-  return await prisma.$transaction(async (tx) => {
+  return await withDbRetry(() => prisma.$transaction(async (tx) => {
     // Create the order
     const order = await tx.order.create({
       data: orderData
@@ -35,14 +36,16 @@ export const createOrder = async (orderData: any) => {
     }
 
     return order;
-  });
+  }));
 };
 
 export const getOrders = async (customerId?: string) => {
-  if (customerId) {
-    return await prisma.order.findMany({
-      where: { customerId }
-    });
-  }
-  return await prisma.order.findMany();
+  return await withDbRetry(() => {
+    if (customerId) {
+      return prisma.order.findMany({
+        where: { customerId }
+      });
+    }
+    return prisma.order.findMany();
+  });
 };

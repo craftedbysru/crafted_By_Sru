@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as inventoryService from "@/services/inventoryService";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { withDbRetry } from "@/lib/db-retry";
 
 export async function GET(
   request: Request,
@@ -33,10 +34,10 @@ export async function PUT(
     // Use RLS-aware client
     const rlsClient = prisma.$withUser(userId);
     
-    const updated = await rlsClient.product.update({
+    const updated = await withDbRetry(() => rlsClient.product.update({
       where: { id },
       data: updates as any,
-    });
+    }));
     
     return NextResponse.json(updated);
   } catch (error: any) {
@@ -61,9 +62,9 @@ export async function DELETE(
     // Use RLS-aware client
     const rlsClient = prisma.$withUser(userId);
     
-    await rlsClient.product.delete({
+    await withDbRetry(() => rlsClient.product.delete({
       where: { id },
-    });
+    }));
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -14,14 +14,20 @@ const getPool = () => {
 
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 15, // Sufficient for parallel page requests
-    idleTimeoutMillis: 5000, // Release idle connections rapidly
-    connectionTimeoutMillis: 10000,
-    maxUses: 1000, 
+    max: 2, // Minimum pool size for high stability in serverless/worker environments
+    idleTimeoutMillis: 500, // Reclaim ports instantly
+    connectionTimeoutMillis: 5000,
+    maxUses: 50, // Recycle connections even more frequently
   });
 
   pool.on('error', (err) => {
-    console.error('Postgres Pool Error:', err);
+    console.error('CRITICAL: Postgres Pool Error:', err);
+    // Port exhaustion or fatal connection loss: clear the pool reference 
+    // to force a fresh pool on the next request cycle.
+    if (err.message.includes('EADDRINUSE') || err.message.includes('connection') || err.message.includes('terminat')) {
+      console.warn('Fatal pool error detected. Resetting global pool reference.');
+      globalThis.__pgPool = undefined;
+    }
   });
 
   globalThis.__pgPool = pool;

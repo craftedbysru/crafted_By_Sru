@@ -45,19 +45,24 @@ export const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.length > 1) {
-      fetch("/api/inventory")
-        .then(res => res.json())
-        .then(data => {
-          const filtered = data.filter((p: any) => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.category.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          setSearchResults(filtered);
-        });
-    } else {
-      setSearchResults([]);
-    }
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.length > 1) {
+        fetch(`/api/inventory?search=${encodeURIComponent(searchQuery)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              setSearchResults(data.slice(0, 5));
+            } else {
+              setSearchResults([]);
+            }
+          })
+          .catch(() => setSearchResults([]));
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -206,7 +211,7 @@ export const Navbar = () => {
                   {searchResults.map((product) => (
                     <Link key={product.id} href={`/product/${product.id}`} className="flex gap-4 group">
                       <div className="w-20 h-24 overflow-hidden bg-amber-50">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                        <img src={product.imageUrl || product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-widest opacity-50 text-amber-900">{product.category}</p>

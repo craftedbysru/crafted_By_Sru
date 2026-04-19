@@ -18,6 +18,8 @@ const productSchema = z.object({
   isBestSeller: z.boolean().optional().default(false),
 });
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -25,20 +27,33 @@ export async function GET(request: Request) {
     const limitStr = searchParams.get("limit");
     const limit = limitStr ? parseInt(limitStr) : undefined;
     const sort = searchParams.get("sort") === "desc" ? { createdAt: "desc" as const } : undefined;
+    const search = searchParams.get("search");
+    const categoryId = searchParams.get("categoryId") || searchParams.get("category");
     
     // Safety check for NaN limit
     const validatedLimit = (limit !== undefined && !isNaN(limit)) ? limit : undefined;
     
-    console.log(`Inventory GET: bestSeller=${bestSeller}, limit=${validatedLimit}, sort=${!!sort}`);
+    console.log(`Inventory GET: bestSeller=${bestSeller}, limit=${validatedLimit}, sort=${!!sort}, search=${search}, categoryId=${categoryId}`);
     
-    let inventory;
-    const options = { take: validatedLimit, orderBy: sort };
-    
-    if (bestSeller) {
-      inventory = await inventoryService.getInventory({ isBestSeller: true }, options);
-    } else {
-      inventory = await inventoryService.getInventory({}, options);
+    const filter: any = {};
+    if (bestSeller) filter.isBestSeller = true;
+    if (categoryId && categoryId !== "all" && categoryId !== "All") {
+      filter.OR = [
+        { categoryId: categoryId },
+        { category: categoryId }
+      ];
     }
+    if (search) {
+      filter.OR = [
+        ...(filter.OR || []),
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+    
+    const options = { take: validatedLimit, orderBy: sort };
+    const inventory = await inventoryService.getInventory(filter, options);
     
     // Ensure inventory is an array
     if (!Array.isArray(inventory)) {
