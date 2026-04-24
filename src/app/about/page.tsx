@@ -52,7 +52,7 @@ export default function AboutPage() {
           className="aspect-[4/5] bg-amber-50 overflow-hidden shadow-2xl"
         >
           <img 
-            src={headerContent.image || ASSETS.artisan} 
+            src={headerContent.image || ASSETS.sru} 
             alt="Handcrafted Heritage" 
             className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
             referrerPolicy="no-referrer"
