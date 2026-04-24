@@ -16,7 +16,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(1); // 1: Shipping, 2: Delivery, 3: Payment
+  const [step, setStep] = useState(1); // 1: Shipping, 3: Payment (Step 2 removed)
   
   const [address, setAddress] = useState({
     firstName: "",
@@ -136,19 +136,15 @@ export default function CheckoutPage() {
             </header>
 
             {/* Stepper */}
-            <div className="flex items-center gap-8 border-b border-amber-950/10 pb-4">
-              <div className={`flex items-center gap-3 ${step >= 1 ? 'text-amber-950' : 'text-amber-900/30'}`}>
-                <span className="text-[10px] font-bold uppercase tracking-widest">01 Shipping</span>
+              <div className="flex items-center gap-8 border-b border-amber-950/10 pb-4">
+                <div className={`flex items-center gap-3 ${step >= 1 ? 'text-amber-950' : 'text-amber-900/30'}`}>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">01 Shipping</span>
+                </div>
+                <div className="w-12 h-px bg-amber-950/10" />
+                <div className={`flex items-center gap-3 ${step >= 3 ? 'text-amber-950' : 'text-amber-900/30'}`}>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">03 Payment</span>
+                </div>
               </div>
-              <div className="w-12 h-px bg-amber-950/10" />
-              <div className={`flex items-center gap-3 ${step >= 2 ? 'text-amber-950' : 'text-amber-900/30'}`}>
-                <span className="text-[10px] font-bold uppercase tracking-widest">02 Delivery</span>
-              </div>
-              <div className="w-12 h-px bg-amber-950/10" />
-              <div className={`flex items-center gap-3 ${step >= 3 ? 'text-amber-950' : 'text-amber-900/30'}`}>
-                <span className="text-[10px] font-bold uppercase tracking-widest">03 Payment</span>
-              </div>
-            </div>
 
             {step === 1 && (
               <motion.div 
@@ -250,18 +246,18 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => {
-                    if (!address.firstName || !address.lastName || !address.street || !address.city || !address.postalCode || !address.phone) {
-                      toast.error("Please fill in all shipping details and mobile number");
-                      return;
-                    }
-                    setStep(2);
-                  }}
-                  className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all shadow-lg"
-                >
-                  Continue to Delivery
-                </button>
+                  <button 
+                    onClick={() => {
+                      if (!address.firstName || !address.lastName || !address.street || !address.city || !address.postalCode || !address.phone) {
+                        toast.error("Please fill in all shipping details and mobile number");
+                        return;
+                      }
+                      setStep(3); // Skip step 2
+                    }}
+                    className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all shadow-lg"
+                  >
+                    Continue to Payment
+                  </button>
               </motion.div>
             )}
 
@@ -326,6 +322,36 @@ export default function CheckoutPage() {
                     You will be redirected to Razorpay's secure payment gateway to complete your transaction. We support all major cards, UPI, and Net Banking.
                   </p>
 
+                  <div className="bg-amber-50/50 p-6 border border-amber-900/10 mt-8">
+                    <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-900/60 mb-4">Shipping & Terms</h4>
+                    <div className="space-y-4 text-[11px] leading-relaxed text-amber-900/80">
+                      <div>
+                        <p className="font-bold">Shipping Destination:</p>
+                        <p>We can ship your gifts directly to any address provided at checkout.</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">Timeline:</p>
+                        <p>Standard orders are dispatched within 12–15 working days. Once shipped, please allow 4–10 working days for delivery.</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">Custom Orders:</p>
+                        <p>For personalized items, our team will contact you directly to provide a specific dispatch timeline.</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">Accuracy:</p>
+                        <p>To ensure successful delivery, please double-check that your shipping address and contact number are accurate.</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">Terms:</p>
+                        <p>We cannot be held responsible for delays or failed deliveries due to incorrect addresses or inaccessible premises (e.g., locked gates).</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">Our Commitment:</p>
+                        <p>While we partner with reliable couriers to meet your requested delivery dates, please note that occasional delays may occur due to external factors.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <CheckoutButton
                     amount={total}
                     orderData={{
@@ -347,10 +373,10 @@ export default function CheckoutPage() {
                 </div>
 
                 <button 
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(1)}
                   className="w-full py-3 text-[10px] uppercase tracking-widest text-amber-900/40 font-bold hover:text-amber-950 transition-colors"
                 >
-                  Back to Delivery
+                  Back to Shipping
                 </button>
               </motion.div>
             )}
@@ -398,10 +424,6 @@ export default function CheckoutPage() {
                   <span className="text-amber-900/60">Shipping & Handling</span>
                   <span className="text-amber-950">₹{shipping.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-amber-900/60">Eco-Packaging Tax</span>
-                  <span className="text-green-600">Free</span>
-                </div>
                 <div className="h-px bg-amber-950/10 w-full my-2" />
                 <div className="flex justify-between items-baseline">
                   <span className="font-serif text-3xl text-amber-950">Total</span>
@@ -412,9 +434,6 @@ export default function CheckoutPage() {
               <div className="flex justify-between pt-6">
                 <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest font-bold text-amber-900/40">
                   <ShieldCheck size={12} /> Secure Payment
-                </div>
-                <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest font-bold text-amber-900/40">
-                  <Truck size={12} /> Artisan Shipped
                 </div>
               </div>
             </div>

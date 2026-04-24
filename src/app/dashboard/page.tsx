@@ -123,10 +123,19 @@ export default function MerchantDashboard() {
         });
   
         if (!uploadRes.ok) {
-          throw new Error("Direct upload failed, trying fallback...");
+          const errorText = await uploadRes.text().catch(() => "Storage error");
+          throw new Error(`Cloud storage rejected upload (${uploadRes.status}): ${errorText}`);
         }
-      } catch (putErr) {
-        console.warn("Direct R2 upload failed (possibly CORS). Falling back to server-side POST...", putErr);
+      } catch (putErr: any) {
+        // Log more detail to console for debugging
+        console.error("Direct R2 upload failed:", putErr);
+
+        // If it's a large file, the fallback will likely hit 413 Payload Too Large on the server
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`Direct upload failed (${putErr.message}). Large files (>10MB) must be uploaded directly to Cloud Storage. Please ensure your R2 bucket CORS is configured to allow PUT requests from this domain.`);
+        }
+
+        console.warn("Direct R2 upload failed. Falling back to server-side POST...", putErr);
         
         // Fallback: Upload via our own server-side POST route
         const formDataUpload = new FormData();

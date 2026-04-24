@@ -199,6 +199,7 @@ export default function ProductDetail() {
             <p className="text-[11px] uppercase tracking-[0.4em] text-amber-700 mb-4">{product.category}</p>
             <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-4">{product.name}</h1>
             <p className="text-2xl font-light text-amber-950">₹{product.price}</p>
+            <p className="text-[10px] text-amber-900/50 mt-1 uppercase tracking-widest">Taxes included. Shipping calculated at checkout</p>
           </div>
 
           <div className="h-px bg-amber-900/10 w-full"></div>
