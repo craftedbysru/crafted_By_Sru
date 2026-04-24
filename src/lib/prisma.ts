@@ -12,8 +12,12 @@ declare global {
 const getPool = () => {
   if (globalThis.__pgPool) return globalThis.__pgPool;
 
+  const connectionString = process.env.DATABASE_URL?.includes("://") 
+    ? process.env.DATABASE_URL 
+    : `postgresql://${process.env.DATABASE_URL || 'localhost'}/db`;
+
   const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     max: 10, // Increased from 2 to handle concurrent requests better
     idleTimeoutMillis: 30000, 
     connectionTimeoutMillis: 10000,
