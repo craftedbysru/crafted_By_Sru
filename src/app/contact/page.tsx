@@ -21,14 +21,37 @@ export default function ContactPage() {
     address: "Creative Quarter, Creative District, Mumbai, India"
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      toast.success("Thank you for your message. We'll get back to you soon!");
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      message: formData.get("message"),
+      subject: "General Inquiry"
+    };
+
+    try {
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        toast.success("Thank you for your message. We'll get back to you soon!");
+        (e.target as HTMLFormElement).reset();
+      } else {
+        toast.error("Failed to send message. Please try again.");
+      }
+    } catch (err) {
+      toast.error("An error occurred. Please try again later.");
+    } finally {
       setLoading(false);
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    }
   };
 
   if (dataLoading) {
@@ -96,6 +119,7 @@ export default function ContactPage() {
               <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Full Name</label>
               <input 
                 required
+                name="name"
                 type="text" 
                 className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               />
@@ -104,7 +128,17 @@ export default function ContactPage() {
               <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Email Address</label>
               <input 
                 required
+                name="email"
                 type="email" 
+                className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
+              <input 
+                required
+                name="phone"
+                type="tel" 
                 className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
               />
             </div>
@@ -112,6 +146,7 @@ export default function ContactPage() {
               <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Message</label>
               <textarea 
                 required
+                name="message"
                 rows={4}
                 className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950 resize-none"
               />

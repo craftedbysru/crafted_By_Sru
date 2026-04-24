@@ -24,6 +24,9 @@ export async function withDbRetry<T>(
         error.message?.includes('terminat') ||
         error.message?.includes('Pool') ||
         error.code === 'EADDRINUSE' ||
+        error.code === 'P1001' || // Can't reach database
+        error.code === 'P1002' || // Time out
+        error.code === 'P1008' || // Operations time out
         error.code === 'P2024'; // Connection timeout
 
       if (!isTransient) {

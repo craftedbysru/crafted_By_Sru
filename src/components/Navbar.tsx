@@ -72,6 +72,8 @@ export const Navbar = () => {
   }, [pathname]);
 
   const handleLogout = () => {
+    localStorage.removeItem("sru_cart");
+    window.dispatchEvent(new Event("sru_cart_change"));
     signOut({ callbackUrl: "/" });
   };
 
@@ -104,10 +106,10 @@ export const Navbar = () => {
             <Link href="/dashboard" className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900 pb-1">Dashboard</Link>
           ) : (
             <>
-              <Link href="/" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Home</Link>
-              <Link href="/catalog" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Catalog</Link>
-              <Link href="/about" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Our Story</Link>
-              <Link href="/contact" prefetch={true} className="text-[10px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Reach Out</Link>
+              <Link href="/" prefetch={true} className="text-[12px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Home</Link>
+              <Link href="/catalog" prefetch={true} className="text-[12px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Catalog</Link>
+              <Link href="/about" prefetch={true} className="text-[12px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Our Story</Link>
+              <Link href="/contact" prefetch={true} className="text-[12px] uppercase tracking-widest hover:opacity-70 transition-opacity text-amber-900">Reach Out</Link>
             </>
           )}
         </div>

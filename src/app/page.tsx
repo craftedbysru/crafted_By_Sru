@@ -93,6 +93,16 @@ export default function Home() {
     fetchData();
 
     const loadCart = () => {
+      // Logic for Task 3: Reset cart on first access to clean up defaults, but keep for sessions
+      const cartInitialized = localStorage.getItem("sru_cart_init_v2");
+      if (!cartInitialized) {
+        localStorage.setItem("sru_cart", "[]");
+        localStorage.setItem("sru_cart_init_v2", "true");
+        setCartItems([]);
+        window.dispatchEvent(new Event("sru_cart_change"));
+        return;
+      }
+      
       const savedCart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
       setCartItems(savedCart);
     };
@@ -151,7 +161,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="bg-[#FDF8F3] min-h-screen">
+    <div className="bg-[#f9f7f2] min-h-screen">
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-6 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
@@ -357,8 +367,8 @@ export default function Home() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-serif-alt text-2xl text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h3>
-                      <p className="text-amber-950 font-light italic">₹{product.price}</p>
+                      <h3 className="font-serif-alt text-2xl text-amber-950 group-hover:text-amber-800 transition-colors font-medium">{product.name}</h3>
+                      <p className="text-amber-950 font-medium italic">₹{product.price}</p>
                     </div>
                   </Link>
                 </motion.div>

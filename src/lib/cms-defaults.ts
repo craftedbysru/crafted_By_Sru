@@ -107,5 +107,20 @@ export const CMS_DEFAULTS: Record<string, any[]> = {
         details: "Standard shipping takes 10-15 business days across India. International orders may vary."
       }
     }
+  ],
+  "shipping-config": [
+    {
+      section: "rules",
+      content: {
+        baseCharge: 650,
+        freeShippingThreshold: 5000,
+        perItemSurcharge: 50,
+        categoryPremium: {
+          "Pottery": 100,
+          "Textiles": 0,
+          "Decor": 50
+        }
+      }
+    }
   ]
 };

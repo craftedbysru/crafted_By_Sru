@@ -7,14 +7,14 @@ import {
   Plus, Edit2, Trash2, Package, Search, X, Save, 
   Image as ImageIcon, LayoutDashboard, ShoppingBag, 
   Users, Settings, LogOut, ChevronRight, Filter,
-  TrendingUp, DollarSign, Clock, CheckCircle2, AlertCircle, Menu, Eye
+  TrendingUp, DollarSign, Clock, CheckCircle2, AlertCircle, Menu, Eye, Truck
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { getPlaceholderImage } from "@/lib/images";
 
-type Section = "dashboard" | "orders" | "inventory" | "categories" | "cms";
+type Section = "dashboard" | "orders" | "inventory" | "categories" | "cms" | "shipping" | "messages";
 
 export default function MerchantDashboard() {
   const { data: session, status } = useSession();
@@ -23,6 +23,7 @@ export default function MerchantDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [cmsContent, setCmsContent] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [selectedCmsPage, setSelectedCmsPage] = useState("home");
   const [isCmsModalOpen, setIsCmsModalOpen] = useState(false);
   const [cmsFormData, setCmsFormData] = useState({ 
@@ -44,7 +45,7 @@ export default function MerchantDashboard() {
   const router = useRouter();
   
   // Robust fetch with automatic retry for unstable connections
-  const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3, backoff = 1000): Promise<Response> => {
+  const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3, backoff = 500): Promise<Response> => {
     let lastError: any;
     for (let i = 0; i < retries; i++) {
       try {
@@ -56,9 +57,9 @@ export default function MerchantDashboard() {
         lastError = err;
         if (i === retries - 1) break;
         
-        const delay = backoff * Math.pow(2, i);
-        toast.info(`Connection unstable. Retrying in ${delay/1000}s... (Attempt ${i + 1}/${retries})`, {
-          id: `retry-${url.substring(0, 20)}`, // Consistent ID to avoid stacking
+        const delay = backoff * Math.pow(1.5, i); // Faster backoff for interactive dashboard
+        toast.info(`Fluctuation detected. Retrying... (${i + 1}/${retries})`, {
+          id: `retry-${url.substring(0, 20)}`, 
         });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -70,6 +71,7 @@ export default function MerchantDashboard() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    productData: "",
     price: "",
     sku: "",
     category: "",
@@ -97,24 +99,27 @@ export default function MerchantDashboard() {
     }
 
     try {
-      // 1. Get presigned URL
-      const presignedRes = await fetchWithRetry(`/api/upload?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`);
-      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
-      const { uploadUrl, publicUrl } = await presignedRes.json();
+      // Try server-side upload first as a more reliable fallback for this environment
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
 
-      // 2. Direct upload to R2
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
       });
 
-      if (!uploadRes.ok) throw new Error("Upload failed");
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json();
+        throw new Error(errorData.error || "Upload failed");
+      }
 
-      // 3. Update state with public URL
+      const { url: publicUrl } = await uploadRes.json();
+
+      // Update state with public URL
       if (type === "video") {
         setVideoUploadStatus("success");
         setFormData(prev => ({ ...prev, videoUrl: publicUrl }));
+        toast.success("Video uploaded successfully");
       } else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
@@ -123,7 +128,7 @@ export default function MerchantDashboard() {
         });
       }
       return publicUrl;
-    } catch (err) {
+    } catch (err: any) {
       console.error(`${type} upload failed:`, err);
       if (type === "video") setVideoUploadStatus("failed");
       else if (index !== undefined) {
@@ -226,7 +231,8 @@ export default function MerchantDashboard() {
         fetchWithRetry("/api/inventory"),
         fetchWithRetry("/api/orders"),
         fetchWithRetry("/api/categories"),
-        (role === "admin" || role === "merchant") ? fetchWithRetry("/api/content") : Promise.resolve(null)
+        (role === "admin" || role === "merchant") ? fetchWithRetry("/api/content") : Promise.resolve(null),
+        (role === "admin" || role === "merchant") ? fetchWithRetry("/api/messages") : Promise.resolve(null)
       ]);
       
       const productsData = await responses[0].json();
@@ -241,6 +247,11 @@ export default function MerchantDashboard() {
         const cmsData = await responses[3].json();
         setCmsContent(Array.isArray(cmsData) ? cmsData : []);
       }
+
+      if ((role === "admin" || role === "merchant") && responses[4]) {
+        const msgData = await responses[4].json();
+        setMessages(Array.isArray(msgData) ? msgData : []);
+      }
     } catch (error) {
       toast.error("Failed to load dashboard data");
     } finally {
@@ -254,6 +265,7 @@ export default function MerchantDashboard() {
       setFormData({
         name: product.name,
         description: product.description,
+        productData: product.productData || "",
         price: product.price.toString(),
         sku: product.sku || "",
         category: product.category || "",
@@ -272,6 +284,7 @@ export default function MerchantDashboard() {
       setFormData({
         name: "",
         description: "",
+        productData: "",
         price: "",
         sku: "",
         category: "",
@@ -303,9 +316,17 @@ export default function MerchantDashboard() {
     try {
       // Finalize URLs (use pre-uploaded publicUrl if available, otherwise use preview/string)
       // This is fast because most uploads are already done in the background
-      const finalImages = imageList.map(img => img.publicUrl || img.preview);
+      const finalImages = imageList
+        .filter(img => img.publicUrl || img.preview.startsWith('http')) // Only keep successful uploads or already saved URLs
+        .map(img => img.publicUrl || img.preview);
+      
       const finalVideoUrl = formData.videoUrl;
 
+      if (finalImages.length === 0) {
+        toast.error("At least one product image is required.");
+        setUploading(false);
+        return;
+      }
       const method = editingProduct ? "PUT" : "POST";
       const url = editingProduct ? `/api/inventory/${editingProduct.id}` : "/api/inventory";
 
@@ -414,6 +435,21 @@ export default function MerchantDashboard() {
         fetchData();
       } else {
         toast.error("Failed to delete category");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this inquiry?")) return;
+    try {
+      const response = await fetch(`/api/messages/${id}`, { method: "DELETE" });
+      if (response.ok) {
+        toast.success("Message deleted");
+        fetchData();
+      } else {
+        toast.error("Failed to delete message");
       }
     } catch (error) {
       toast.error("An error occurred");
@@ -540,12 +576,26 @@ export default function MerchantDashboard() {
             onClick={() => { setActiveSection("categories"); setIsSidebarOpen(false); }} 
           />
           {((session?.user as any)?.role === "admin" || (session?.user as any)?.role === "merchant") && (
-            <SidebarLink 
-              icon={<Settings size={18} />} 
-              label="Website Content" 
-              active={activeSection === "cms"} 
-              onClick={() => { setActiveSection("cms"); setIsSidebarOpen(false); }} 
-            />
+            <>
+              <SidebarLink 
+                icon={<Settings size={18} />} 
+                label="Website Content" 
+                active={activeSection === "cms"} 
+                onClick={() => { setActiveSection("cms"); setIsSidebarOpen(false); }} 
+              />
+              <SidebarLink 
+                icon={<Truck size={18} />} 
+                label="Shipping Config" 
+                active={activeSection === "shipping"} 
+                onClick={() => { setActiveSection("shipping"); setIsSidebarOpen(false); }} 
+              />
+              <SidebarLink 
+                icon={<Clock size={18} />} 
+                label="Inquiries" 
+                active={activeSection === "messages"} 
+                onClick={() => { setActiveSection("messages"); setIsSidebarOpen(false); }} 
+              />
+            </>
           )}
         </nav>
 
@@ -762,11 +812,11 @@ export default function MerchantDashboard() {
                           <Trash2 size={16} />
                         </button>
                       </div>
-                      {product.stock < 5 && (
-                        <div className="absolute bottom-4 left-4 px-3 py-1 bg-red-600 text-white text-[8px] uppercase tracking-widest font-bold">
-                          Low Stock: {product.stock}
-                        </div>
-                      )}
+      {product.stock < 25 && (
+        <div className="absolute bottom-4 left-4 px-3 py-1 bg-red-600 text-white text-[8px] uppercase tracking-widest font-bold">
+          Low Stock: {product.stock}
+        </div>
+      )}
                     </div>
                     <div className="p-6 space-y-2 flex-1 flex flex-col">
                       <p className="text-[8px] uppercase tracking-widest text-amber-900/40 font-bold">{product.categoryRel?.name || product.category || "No Category"}</p>
@@ -902,6 +952,92 @@ export default function MerchantDashboard() {
               </div>
             </motion.div>
           )}
+
+          {activeSection === "shipping" && (
+            <motion.div 
+              key="shipping"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-12"
+            >
+              <div>
+                <h1 className="font-serif text-4xl text-amber-950 mb-2">Shipping & Handling</h1>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Configure your global shipping rules and category modifiers.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-12">
+                <CMSSectionEditor 
+                  title="Global Shipping Rules" 
+                  page="config" 
+                  section="shipping" 
+                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping")?.content || { baseCharge: 500, perItemSurcharge: 50, freeAbove: 25000 }}
+                  onSave={fetchData}
+                  products={products}
+                  categories={categories}
+                />
+                
+                <CMSSectionEditor 
+                  title="Category Modifiers" 
+                  page="config" 
+                  section="shipping-categories" 
+                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping-categories")?.content || { categories: [] }}
+                  onSave={fetchData}
+                  products={products}
+                  categories={categories}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {activeSection === "messages" && (
+            <motion.div 
+              key="messages"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-8"
+            >
+              <div>
+                <h1 className="font-serif text-4xl text-amber-950 mb-2">Customer Inquiries</h1>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Messages from the 'Reach out' page.</p>
+              </div>
+
+              <div className="bg-white border border-amber-900/10 overflow-hidden">
+                <div className="divide-y divide-amber-900/5">
+                  {messages.length === 0 && (
+                    <div className="p-12 text-center">
+                      <p className="text-[10px] uppercase tracking-widest text-amber-900/40">No messages yet.</p>
+                    </div>
+                  )}
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="p-8 hover:bg-amber-50 transition-colors group relative">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="font-serif text-xl text-amber-950">{msg.subject}</h4>
+                          <div className="flex gap-4 mt-1">
+                            <span className="text-[10px] uppercase tracking-widest font-bold text-amber-950">{msg.name}</span>
+                            <span className="text-[10px] uppercase tracking-widest text-amber-900/40">{msg.email}</span>
+                            {msg.phone && <span className="text-[10px] uppercase tracking-widest text-amber-900/40">{msg.phone}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-[8px] uppercase tracking-widest text-amber-900/40">{new Date(msg.createdAt).toLocaleString()}</span>
+                          <button 
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 p-2 text-red-600 hover:bg-red-50 rounded-full transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-amber-900/70 leading-relaxed max-w-2xl">{msg.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -995,6 +1131,18 @@ export default function MerchantDashboard() {
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950 resize-none"
+                    placeholder="Brief description for catalog"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Product Data (Technical/Heritage Details)</label>
+                  <textarea 
+                    rows={6}
+                    value={formData.productData}
+                    onChange={(e) => setFormData({...formData, productData: e.target.value})}
+                    className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950 resize-none"
+                    placeholder="Detailed specifications, heritage info, artisan story, etc."
                   />
                 </div>
 
@@ -1211,9 +1359,10 @@ export default function MerchantDashboard() {
                     <div className="text-xs text-amber-900/60 leading-relaxed">
                       {selectedOrder.shippingAddress ? (
                         <>
-                          <p className="font-bold text-amber-950">{selectedOrder.shippingAddress.name}</p>
+                          <p className="font-bold text-amber-950">{selectedOrder.shippingAddress.firstName} {selectedOrder.shippingAddress.lastName}</p>
                           <p>{selectedOrder.shippingAddress.street}</p>
-                          <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zipCode}</p>
+                          {selectedOrder.shippingAddress.street2 && <p>{selectedOrder.shippingAddress.street2}</p>}
+                          <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.postalCode || selectedOrder.shippingAddress.zipCode}</p>
                           <p>{selectedOrder.shippingAddress.country}</p>
                           <p className="mt-1 font-bold">{selectedOrder.phone || selectedOrder.shippingAddress.phone}</p>
                         </>
@@ -1625,21 +1774,51 @@ function CMSSectionEditor({ title, page, section, initialContent, initialDisplay
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     ) : (
-                      Object.keys(item).map(subKey => (
-                        <div key={subKey} className="space-y-1">
-                          <label className="text-[7px] uppercase tracking-widest font-bold text-amber-900/30">{subKey}</label>
-                          <textarea 
-                            value={item[subKey]}
-                            onChange={(e) => {
-                              const newArray = [...content[key]];
-                              newArray[idx] = { ...newArray[idx], [subKey]: e.target.value };
-                              setContent({...content, [key]: newArray});
-                            }}
-                            className="w-full bg-white border border-amber-900/5 p-2 text-xs text-amber-950 focus:outline-none focus:border-amber-900/20 resize-none"
-                            rows={2}
-                          />
-                        </div>
-                      ))
+                      Object.keys(item).map(subKey => {
+                        const isNumberField = subKey.toLowerCase().includes("premium") || 
+                                           subKey.toLowerCase().includes("charge") || 
+                                           subKey.toLowerCase().includes("multiplier") || 
+                                           subKey.toLowerCase().includes("price") ||
+                                           subKey.toLowerCase().includes("above");
+                        const isCategoryId = subKey.toLowerCase().includes("categoryid");
+
+                        if (isCategoryId) {
+                          return (
+                            <div key={subKey} className="space-y-1">
+                              <label className="text-[7px] uppercase tracking-widest font-bold text-amber-900/30">{subKey}</label>
+                              <select 
+                                value={item[subKey]}
+                                onChange={(e) => {
+                                  const cat = categories.find(c => c.id === e.target.value);
+                                  const newArray = [...content[key]];
+                                  newArray[idx] = { ...newArray[idx], [subKey]: e.target.value, name: cat?.name || "" };
+                                  setContent({...content, [key]: newArray});
+                                }}
+                                className="w-full bg-white border border-amber-900/5 p-2 text-xs text-amber-950 focus:outline-none"
+                              >
+                                <option value="">Select Category</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={subKey} className="space-y-1">
+                            <label className="text-[7px] uppercase tracking-widest font-bold text-amber-900/30">{subKey}</label>
+                            <input 
+                              type={isNumberField ? "number" : "text"}
+                              value={item[subKey]}
+                              onChange={(e) => {
+                                const newArray = [...content[key]];
+                                newArray[idx] = { ...newArray[idx], [subKey]: isNumberField ? parseFloat(e.target.value) : e.target.value };
+                                setContent({...content, [key]: newArray});
+                              }}
+                              className="w-full bg-white border border-amber-900/5 p-2 text-xs text-amber-950 focus:outline-none focus:border-amber-900/20"
+                            />
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 ))}
@@ -1647,6 +1826,11 @@ function CMSSectionEditor({ title, page, section, initialContent, initialDisplay
             );
           }
           
+          const isNumberInput = key.toLowerCase().includes("charge") || 
+                               key.toLowerCase().includes("above") || 
+                               key.toLowerCase().includes("order") ||
+                               key.toLowerCase().includes("price");
+
           return (
             <div key={key} className="space-y-1">
               <label className="text-[8px] uppercase tracking-widest font-bold text-amber-900/40">{key}</label>
@@ -1660,9 +1844,9 @@ function CMSSectionEditor({ title, page, section, initialContent, initialDisplay
               ) : (
                 <div className="space-y-2">
                   <input 
-                    type="text" 
+                    type={isNumberInput ? "number" : "text"}
                     value={content[key]}
-                    onChange={(e) => setContent({...content, [key]: e.target.value})}
+                    onChange={(e) => setContent({...content, [key]: isNumberInput ? parseFloat(e.target.value) : e.target.value})}
                     className="w-full bg-amber-50/30 border border-amber-900/5 p-3 text-sm text-amber-950 focus:outline-none focus:border-amber-900/20"
                   />
                   {isImage && content[key] && (

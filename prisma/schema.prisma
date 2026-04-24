@@ -15,6 +15,8 @@ datasource db {
 model User {
   id            String    @id @default(uuid())
   name          String?
+  firstName     String?
+  lastName      String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
@@ -72,6 +74,7 @@ model VerificationToken {
 model Address {
   id        String  @id @default(uuid())
   street    String
+  street2   String?
   city      String
   state     String?
   zipCode   String
@@ -113,6 +116,7 @@ model Product {
   stock       Int      @default(0)
   featured    Boolean  @default(false)
   isBestSeller Boolean @default(false)
+  productData String?  @db.Text
   createdAt   DateTime @default(now())
 }
 
@@ -145,4 +149,15 @@ model Transaction {
   errorDetails     String?
   metadata         Json?    // For IP, device info, browser info
   createdAt        DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  status    String   @default("unread") // unread, read, replied
+  createdAt DateTime @default(now())
 }

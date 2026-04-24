@@ -11,7 +11,9 @@ import { Suspense } from "react";
 
 function SignUpForm() {
   const { data: session, status } = useSession();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,14 @@ function SignUpForm() {
       const signupRes = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ 
+          name: `${firstName} ${lastName}`, 
+          firstName, 
+          lastName, 
+          phone, 
+          email, 
+          password 
+        }),
       });
 
       const signupData = await signupRes.json();
@@ -93,22 +102,47 @@ function SignUpForm() {
           <p className="text-xs text-amber-900/40 tracking-widest uppercase">Create your heritage account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">First Name</label>
+              <input 
+                required
+                type="text" 
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                placeholder="First Name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Last Name</label>
+              <input 
+                required
+                type="text" 
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                placeholder="Last Name"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40 flex items-center gap-2">
-              <User size={12} />
-              Full Name
+              <Phone size={12} />
+              Mobile Number
             </label>
             <input 
               required
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              type="tel" 
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-              placeholder="Enter your name"
-              autoComplete="off"
+              placeholder="Enter mobile number"
             />
           </div>
+
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40 flex items-center gap-2">
               <Mail size={12} />

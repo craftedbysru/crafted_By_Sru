@@ -20,9 +20,9 @@ export default function ProductDetail() {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
   const { getSection: getContactCMS } = useCMS("contact");
-  const contactInfo = getContactCMS("contact-info", {
-    email: "contact@craftedbysru.com",
-    phone: "+91 9876543210"
+  const contactInfo = getContactCMS("details", {
+    email: "concierge@craftedbysru.com",
+    phone: "+91 98765 43210"
   });
 
   const productImages = product ? (
@@ -265,17 +265,15 @@ export default function ProductDetail() {
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Details</h4>
-              <ul className="text-xs space-y-2 opacity-50 text-amber-900">
-                <li>Handpicked in our boutique studio</li>
-                <li>Sustainable materials</li>
-                <li>Limited edition release</li>
-              </ul>
+              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Product Data</h4>
+              <div className="text-xs space-y-2 opacity-50 text-amber-900 whitespace-pre-wrap">
+                {product.productData || "Unique heritage piece from our boutique studio. Detailed specifications and artisan story available upon inquiry."}
+              </div>
             </div>
             <div>
-              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Shipping</h4>
+              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Delivery</h4>
               <p className="text-xs opacity-50 leading-relaxed text-amber-900">
-                Ships within 10-15 business days. Worldwide delivery available.
+                Ships within 7-10 business days. Priority heritage packaging ensures your items arrive in pristine condition.
               </p>
             </div>
           </div>

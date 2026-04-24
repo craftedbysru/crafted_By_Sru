@@ -14,12 +14,20 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"orders" | "addresses">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: ""
+  });
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [newAddress, setNewAddress] = useState({
     name: "",
     phone: "",
     street: "",
+    street2: "",
     city: "",
     state: "",
     zipCode: "",
@@ -70,8 +78,26 @@ export default function AccountPage() {
 
     if (status === "authenticated" && session?.user?.id) {
       fetchData();
+      fetchProfile();
     }
   }, [status, session, router]);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/user/profile");
+      if (res.ok) {
+        const data = await res.json();
+        setProfile({
+          firstName: data.firstName || data.name?.split(" ")[0] || "",
+          lastName: data.lastName || data.name?.split(" ").slice(1).join(" ") || "",
+          phone: data.phone || "",
+          email: data.email || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -108,7 +134,7 @@ export default function AccountPage() {
       if (response.ok) {
         toast.success("Address added successfully");
         setIsAddressModalOpen(false);
-        setNewAddress({ name: "", phone: "", street: "", city: "", state: "", zipCode: "", country: "India" });
+        setNewAddress({ name: "", phone: "", street: "", street2: "", city: "", state: "", zipCode: "", country: "India" });
         fetchData();
       } else {
         toast.error("Failed to add address");
@@ -130,6 +156,33 @@ export default function AccountPage() {
       }
     } catch (error) {
       toast.error("An error occurred");
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingProfile(true);
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Profile updated successfully");
+        fetchProfile();
+      } else {
+        toast.error("Failed to update profile");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -176,6 +229,15 @@ export default function AccountPage() {
               }`}
             >
               Addresses
+              <ChevronRight size={14} />
+            </button>
+            <button 
+              onClick={() => setActiveTab("profile")}
+              className={`flex items-center justify-between p-6 text-[10px] uppercase tracking-widest font-bold transition-colors ${
+                activeTab === "profile" ? "bg-amber-950 text-white" : "text-amber-900/60 hover:bg-amber-50"
+              }`}
+            >
+              Your Profile
               <ChevronRight size={14} />
             </button>
             <button 
@@ -242,11 +304,11 @@ export default function AccountPage() {
                           </div>
                           <div className="space-y-1">
                              <Link 
-                              href={`/orders/${order.id}`}
-                              className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900/20 pb-0.5 hover:border-amber-950 transition-all block mt-2"
-                            >
-                              View Details
-                            </Link>
+                               href={`/orders/${order.id}`}
+                               className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900/20 pb-0.5 hover:border-amber-950 transition-all block mt-2"
+                             >
+                               View Details
+                             </Link>
                           </div>
                         </div>
 
@@ -272,9 +334,10 @@ export default function AccountPage() {
                           <div className="space-y-2">
                              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Shipping To</p>
                              <div className="text-xs text-amber-900/60 leading-relaxed">
-                               <p className="font-bold text-amber-950">{order.shippingAddress?.name || session?.user?.name}</p>
+                               <p className="font-bold text-amber-950">{order.shippingAddress?.firstName} {order.shippingAddress?.lastName}</p>
                                <p>{order.shippingAddress?.street}</p>
-                               <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}</p>
+                               {order.shippingAddress?.street2 && <p>{order.shippingAddress?.street2}</p>}
+                               <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode || order.shippingAddress?.zipCode}</p>
                                <p className="mt-1 font-bold">{order.phone || order.shippingAddress?.phone}</p>
                              </div>
                           </div>
@@ -284,7 +347,7 @@ export default function AccountPage() {
                   </div>
                 )}
               </motion.div>
-            ) : (
+            ) : activeTab === "addresses" ? (
               <motion.div 
                 key="addresses"
                 initial={{ opacity: 0, x: 10 }}
@@ -323,6 +386,7 @@ export default function AccountPage() {
                         </button>
                         <p className="text-sm text-amber-950 mb-1 font-bold">{address.name} ({address.phone})</p>
                         <p className="text-sm text-amber-950 mb-1">{address.street}</p>
+                        {address.street2 && <p className="text-sm text-amber-950 mb-1">{address.street2}</p>}
                         <p className="text-sm text-amber-950 mb-1">{address.city}, {address.state} {address.zipCode}</p>
                         <p className="text-sm text-amber-950">{address.country}</p>
                       </div>
@@ -330,7 +394,74 @@ export default function AccountPage() {
                   </div>
                 )}
               </motion.div>
+            ) : (
+              <motion.div 
+                key="profile"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="max-w-2xl"
+              >
+                <h2 className="font-serif text-4xl text-amber-950 mb-12">Your Profile</h2>
+                <div className="bg-white border border-amber-900/10 p-10 shadow-sm">
+                  <form onSubmit={handleUpdateProfile} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">First Name</label>
+                        <input 
+                          required
+                          type="text" 
+                          value={profile.firstName}
+                          onChange={(e) => setProfile({...profile, firstName: e.target.value})}
+                          className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Last Name</label>
+                        <input 
+                          required
+                          type="text" 
+                          value={profile.lastName}
+                          onChange={(e) => setProfile({...profile, lastName: e.target.value})}
+                          className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Email Address (Read-only)</label>
+                      <input 
+                        readOnly
+                        type="email" 
+                        value={profile.email}
+                        className="w-full bg-transparent border-b border-amber-900/10 py-3 text-amber-900/40 cursor-not-allowed outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
+                      <input 
+                        required
+                        type="tel" 
+                        value={profile.phone}
+                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                        className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+
+                    <button 
+                      type="submit"
+                      disabled={isUpdatingProfile}
+                      className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all disabled:opacity-50 mt-4"
+                    >
+                      {isUpdatingProfile ? "Saving Changes..." : "Update Profile"}
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
             )}
+}
           </AnimatePresence>
         </div>
       </div>
@@ -382,15 +513,26 @@ export default function AccountPage() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Street Address</label>
-                  <input 
-                    required
-                    type="text" 
-                    value={newAddress.street}
-                    onChange={(e) => setNewAddress({...newAddress, street: e.target.value})}
-                    className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Street Address</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={newAddress.street}
+                      onChange={(e) => setNewAddress({...newAddress, street: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Apartment, suite, etc. (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={newAddress.street2}
+                      onChange={(e) => setNewAddress({...newAddress, street2: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">

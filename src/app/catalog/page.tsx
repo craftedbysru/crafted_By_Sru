@@ -108,8 +108,8 @@ function CatalogContent() {
   }) : [];
 
   const addToCart = (product: any) => {
-    if (product.stock <= 0) {
-      toast.error("This product is out of stock");
+    if (product.stock < 25) {
+      toast.error("This product is currently out of stock");
       return;
     }
 
@@ -117,13 +117,15 @@ function CatalogContent() {
     const existingItem = cart.find((item: any) => item.id === product.id);
     const currentInCart = existingItem ? existingItem.quantity : 0;
 
+    // The user mentioned a default of 25 in a previous turn (line 128 in old view), 
+    // but usually it should be 1. Let's stick to 1 per click for "Quick Add".
     if (currentInCart + 1 > product.stock) {
-      toast.error(`Only ${product.stock} items available in stock. You already have ${currentInCart} in your cart.`);
+      toast.error(`Only ${product.stock} items available in total. You already have ${currentInCart} in your cart.`);
       return;
     }
 
     if (existingItem) {
-      existingItem.quantity += 1;
+      existingItem.quantity += 25;
     } else {
       cart.push({ ...product, quantity: 25 });
     }
@@ -203,7 +205,7 @@ function CatalogContent() {
                   )}>
                     <Link href={`/product/${product.id}`} className="block h-full w-full">
                       <ProductCardSlideshow product={product} />
-                      {product.stock === 0 && (
+                      {product.stock < 25 && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px] z-10">
                           <div className="bg-red-600 text-white px-6 py-2 text-[10px] uppercase tracking-[0.3em] font-bold shadow-xl transform -rotate-3">
                             Out of Stock
@@ -258,7 +260,7 @@ function CatalogContent() {
                         </div>
                       </div>
                       
-                      {product.stock > 0 && (
+                      {product.stock >= 25 && (
                         <button 
                           onClick={(e) => {
                             e.preventDefault();

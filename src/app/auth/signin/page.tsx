@@ -37,16 +37,20 @@ function SignInForm() {
       });
 
       if (result?.error) {
+        setLoading(false); // Explicitly reset loading before showing toast
+        
         if (result.error.includes("USER_NOT_FOUND")) {
           toast.error("Account not found. Would you like to sign up?", {
             action: {
               label: "Sign Up",
               onClick: () => router.push("/auth/signup")
             },
-            duration: 5000
+            duration: 6000
           });
+        } else if (result.error.includes("INVALID_PASSWORD")) {
+          toast.error("The password you entered is incorrect. Please try again.");
         } else {
-          toast.error("Invalid credentials. Please try again.");
+          toast.error("Authentication failed. Please check your credentials.");
         }
       } else {
         toast.success("Welcome back!");

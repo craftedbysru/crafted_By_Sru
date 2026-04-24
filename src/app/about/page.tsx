@@ -51,7 +51,7 @@ export default function AboutPage() {
           className="aspect-[4/5] bg-amber-50 overflow-hidden shadow-2xl"
         >
           <img 
-            src={headerContent.image || "https://images.unsplash.com/photo-1590739293931-694800366668?auto=format&fit=crop&q=80"} 
+            src={headerContent.image || "https://picsum.photos/seed/craftedbysru-artisan/1200/1500"} 
             alt="Handcrafted Heritage" 
             className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
             referrerPolicy="no-referrer"
@@ -66,7 +66,7 @@ export default function AboutPage() {
             <div key={idx} className={`space-y-6 ${idx > 0 ? (idx === 1 ? 'pt-12' : 'pt-24') : ''}`}>
               <div className="h-80 bg-amber-100 overflow-hidden">
                 <img 
-                  src={item.image || `https://images.unsplash.com/photo-${idx === 0 ? '1513519245088-0e12902e5a38' : (idx === 1 ? '1582555172866-f73bb12a2ab3' : '1617103996702-96ff29b1c467')}?auto=format&fit=crop&q=80`} 
+                  src={item.image || `/images/curation-${(idx % 4) + 1}.svg`} 
                   alt={item.title} 
                   className="w-full h-full object-cover hover:scale-110 transition-all duration-700"
                 />

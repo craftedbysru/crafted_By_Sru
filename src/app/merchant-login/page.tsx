@@ -40,7 +40,14 @@ export default function MerchantLoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid credentials. Please try again.");
+        setLoading(false);
+        if (result.error.includes("USER_NOT_FOUND")) {
+          toast.error("Merchant account not recognized. Please check your email.");
+        } else if (result.error.includes("INVALID_PASSWORD")) {
+          toast.error("Incorrect password for merchant access.");
+        } else {
+          toast.error("Invalid credentials. Please try again.");
+        }
       } else {
         toast.success("Welcome back, Merchant!");
         router.push("/dashboard");
@@ -62,11 +69,11 @@ export default function MerchantLoginPage() {
         className="max-w-md w-full bg-amber-50/30 p-12 border border-amber-900/10"
       >
         <div className="flex flex-col items-center text-center mb-12">
-          <div className="w-16 h-16 bg-amber-950 text-white rounded-full flex items-center justify-center mb-6">
+          <div className="w-16 h-16 bg-stone-950 text-white rounded-full flex items-center justify-center mb-6">
             <ShieldCheck size={32} />
           </div>
-          <h1 className="font-serif text-4xl text-amber-950 mb-2">Merchant Access</h1>
-          <p className="text-xs text-amber-900/40 tracking-widest uppercase">Secure portal for heritage partners</p>
+          <h1 className="font-serif text-4xl text-stone-950 mb-2 font-medium">Merchant Access</h1>
+          <p className="text-xs text-stone-950/40 tracking-widest uppercase font-bold">Secure portal for heritage partners</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">

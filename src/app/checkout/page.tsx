@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import CheckoutButton from "@/components/CheckoutButton";
 import { getPlaceholderImage } from "@/lib/images";
+import { useCMS } from "@/hooks/useCMS";
 
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
@@ -21,6 +22,7 @@ export default function CheckoutPage() {
     firstName: "",
     lastName: "",
     street: "",
+    street2: "",
     city: "",
     postalCode: "",
     country: "India",
@@ -28,7 +30,16 @@ export default function CheckoutPage() {
   });
 
   const [packagingDetails, setPackagingDetails] = useState("Heritage Box");
-  const [deliveryType, setDeliveryType] = useState("Standard Artisan Shipping");
+  const [deliveryType, setDeliveryType] = useState("Express Heritage Delivery");
+
+  // Fetch shipping config from CMS
+  const { content: shippingConfig, loading: loadingCMS } = useCMS("config");
+  const shippingRules = shippingConfig.find(c => c.section === "shipping")?.content || {
+    baseCharge: 500,
+    freeAbove: 25000,
+    perItemSurcharge: 50
+  };
+  const categoryModifiers = shippingConfig.find(c => c.section === "shipping-categories")?.content?.categories || [];
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -43,11 +54,62 @@ export default function CheckoutPage() {
       return;
     }
     setCart(savedCart);
+
+    // Pre-populate address if available in session/user profile
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch("/api/user/profile");
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile.addresses && profile.addresses.length > 0) {
+            const addr = profile.addresses[0];
+            setAddress({
+              firstName: profile.name?.split(" ")[0] || "",
+              lastName: profile.name?.split(" ").slice(1).join(" ") || "",
+              street: addr.street || "",
+              street2: addr.street2 || "",
+              city: addr.city || "",
+              postalCode: addr.zipCode || "",
+              country: addr.country || "India",
+              phone: profile.phone || ""
+            });
+          } else if (profile.phone) {
+            setAddress(prev => ({ ...prev, phone: profile.phone }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user profile for checkout", err);
+      }
+    };
+    fetchUserData();
+
     setLoading(false);
   }, [status, router]);
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = subtotal > 2000 ? 0 : 250;
+  
+  // Dynamic Shipping Calculation based on CMS rules
+  const calculateShipping = () => {
+    if (subtotal >= (Number(shippingRules.freeAbove) || 25000)) return 0;
+    
+    let totalShipping = Number(shippingRules.baseCharge) || 0;
+    
+    // per item surcharge
+    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+    totalShipping += totalItems * (Number(shippingRules.perItemSurcharge) || 0);
+    
+    // category premiums
+    cart.forEach(item => {
+      const modifier = categoryModifiers.find((m: any) => m.id === item.categoryId || m.name === item.category);
+      if (modifier && modifier.premium) {
+        totalShipping += Number(modifier.premium) * item.quantity;
+      }
+    });
+    
+    return totalShipping;
+  };
+
+  const shipping = calculateShipping();
   const total = subtotal + shipping;
 
   if (loading || status === "loading") {
@@ -117,18 +179,30 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Address</label>
-                  <input 
-                    type="text" 
-                    placeholder="Street name and house number"
-                    value={address.street}
-                    onChange={(e) => setAddress({...address, street: e.target.value})}
-                    className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Apartment, suite, etc. (Optional)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Apartment number, floor, etc."
+                      value={address.street2}
+                      onChange={(e) => setAddress({...address, street2: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Street Address</label>
+                    <input 
+                      type="text" 
+                      placeholder="Street name and house number"
+                      value={address.street}
+                      onChange={(e) => setAddress({...address, street: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">City</label>
                     <input 
@@ -139,6 +213,19 @@ export default function CheckoutPage() {
                       className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
+                    <input 
+                      type="tel" 
+                      placeholder="+91 9876543210"
+                      value={address.phone}
+                      onChange={(e) => setAddress({...address, phone: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Postal Code</label>
                     <input 
@@ -163,50 +250,15 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="bg-amber-50 p-8 rounded-sm space-y-6">
-                  <div className="flex gap-4">
-                    <div className="p-3 bg-amber-900/10 rounded-full h-fit">
-                      <ShieldCheck size={20} className="text-amber-900" />
-                    </div>
-                    <div>
-                      <h4 className="font-serif text-lg text-amber-950 mb-1">Sustainability at Heart</h4>
-                      <p className="text-xs text-amber-900/60 leading-relaxed">Our packaging is 100% plastic-free, using hand-pressed recycled paper and organic cotton ties.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setPackagingDetails("Heritage Box")}
-                      className={`p-6 border-2 text-left flex items-start gap-4 group ${packagingDetails === "Heritage Box" ? "border-amber-950 bg-white" : "border-amber-950/10 bg-white/50"}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full border-4 mt-1 ${packagingDetails === "Heritage Box" ? "border-amber-950" : "border-amber-950/20"}`} />
-                      <div>
-                        <p className="text-xs font-bold text-amber-950 uppercase tracking-widest">Heritage Box</p>
-                        <p className="text-[10px] text-amber-900/40">Recycled fiberboard with gold foil</p>
-                      </div>
-                    </button>
-                    <button 
-                      onClick={() => setPackagingDetails("Minimalist Wrap")}
-                      className={`p-6 border-2 text-left flex items-start gap-4 group ${packagingDetails === "Minimalist Wrap" ? "border-amber-950 bg-white" : "border-amber-950/10 bg-white/50"}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full border-4 mt-1 ${packagingDetails === "Minimalist Wrap" ? "border-amber-950" : "border-amber-950/20"}`} />
-                      <div>
-                        <p className="text-xs font-bold text-amber-950 uppercase tracking-widest">Minimalist Wrap</p>
-                        <p className="text-[10px] text-amber-900/40">Zero-waste linen bundle</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
                 <button 
                   onClick={() => {
-                    if (!address.firstName || !address.lastName || !address.street || !address.city || !address.postalCode) {
-                      toast.error("Please fill in all shipping details");
+                    if (!address.firstName || !address.lastName || !address.street || !address.city || !address.postalCode || !address.phone) {
+                      toast.error("Please fill in all shipping details and mobile number");
                       return;
                     }
                     setStep(2);
                   }}
-                  className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all"
+                  className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all shadow-lg"
                 >
                   Continue to Delivery
                 </button>
@@ -220,36 +272,22 @@ export default function CheckoutPage() {
                 className="space-y-10"
               >
                 <div className="space-y-6">
-                  <h3 className="font-serif text-2xl text-amber-950">Select Delivery Method</h3>
+                  <h3 className="font-serif text-2xl text-amber-950">Delivery Method</h3>
                   <div className="space-y-4">
-                    <button 
-                      onClick={() => setDeliveryType("Standard Artisan Shipping")}
-                      className={`w-full p-8 border-2 flex justify-between items-center ${deliveryType === "Standard Artisan Shipping" ? "border-amber-950 bg-white" : "border-amber-950/10 bg-white/50"}`}
+                    <div 
+                      className="w-full p-8 border-2 border-amber-950 bg-white flex justify-between items-center"
                     >
                       <div className="flex gap-6 items-center">
-                        <Truck size={24} className={deliveryType === "Standard Artisan Shipping" ? "text-amber-950" : "text-amber-900/40"} />
-                        <div className="text-left">
-                          <p className={`text-sm font-bold uppercase tracking-widest ${deliveryType === "Standard Artisan Shipping" ? "text-amber-950" : "text-amber-900/40"}`}>Standard Artisan Shipping</p>
-                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 10-15 business days</p>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-amber-950">₹250.00</span>
-                    </button>
-                    <button 
-                      onClick={() => setDeliveryType("Express Heritage Delivery")}
-                      className={`w-full p-8 border-2 flex justify-between items-center ${deliveryType === "Express Heritage Delivery" ? "border-amber-950 bg-white" : "border-amber-950/10 bg-white/50"}`}
-                    >
-                      <div className="flex gap-6 items-center">
-                        <div className={`w-6 h-6 flex items-center justify-center ${deliveryType === "Express Heritage Delivery" ? "text-amber-950" : "text-amber-900/40"}`}>
+                        <div className="w-6 h-6 flex items-center justify-center text-amber-950">
                           <ShoppingBag size={24} />
                         </div>
                         <div className="text-left">
-                          <p className={`text-sm font-bold uppercase tracking-widest ${deliveryType === "Express Heritage Delivery" ? "text-amber-950" : "text-amber-900/40"}`}>Express Heritage Delivery</p>
+                          <p className="text-sm font-bold uppercase tracking-widest text-amber-950">Express Heritage Delivery</p>
                           <p className="text-[10px] text-amber-900/40">Estimated delivery: 10-15 business days</p>
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-amber-950">₹650.00</span>
-                    </button>
+                      <span className="text-sm font-medium text-amber-950">₹{shipping.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
 

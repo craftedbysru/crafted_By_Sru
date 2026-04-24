@@ -7,12 +7,20 @@ import Link from "next/link";
 import { toast } from "sonner";
 import CheckoutButton from "@/components/CheckoutButton";
 import { getPlaceholderImage } from "@/lib/images";
+import { useCMS } from "@/hooks/useCMS";
 
 export default function CartPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Reset cart on first access to clear any potential ghost data from previous versions
+    const initialized = localStorage.getItem("sru_cart_init_v2");
+    if (!initialized) {
+      localStorage.removeItem("sru_cart");
+      localStorage.setItem("sru_cart_init_v2", "true");
+    }
+
     const loadCart = () => {
       const savedCart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
       setCart(savedCart);
@@ -48,8 +56,17 @@ export default function CartPage() {
     window.dispatchEvent(new Event("sru_cart_change"));
   };
 
+  const { getSection } = useCMS("config");
+  const shippingRules = getSection("shipping", {
+    baseCharge: 500,
+    freeAbove: 25000,
+    perItemSurcharge: 50
+  });
+
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = subtotal > 200 ? 0 : 15;
+  const baseCharge = Number(shippingRules.baseCharge) || 0;
+  const freeAbove = Number(shippingRules.freeAbove) || 0;
+  const shipping = (subtotal >= freeAbove && subtotal > 0) ? 0 : (subtotal > 0 ? baseCharge : 0);
   const total = subtotal + shipping;
 
   if (loading) {

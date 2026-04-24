@@ -16,6 +16,7 @@ const productSchema = z.object({
   videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
   stock: z.union([z.string(), z.number()]).transform((val) => Number(val)).optional().default(10),
   isBestSeller: z.boolean().optional().default(false),
+  productData: z.string().optional().default(""),
 });
 
 export const dynamic = "force-dynamic";

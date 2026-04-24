@@ -16,11 +16,22 @@ const getPool = () => {
     ? process.env.DATABASE_URL 
     : `postgresql://${process.env.DATABASE_URL || 'localhost'}/db`;
 
+  // Determine SSL configuration
+  // For Supabase and other cloud providers, SSL is usually required.
+  // We enable it if it's not localhost and not explicitly disabled.
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const hasSslParam = connectionString.includes('sslmode=');
+  
+  const sslConfig = !isLocal && !hasSslParam
+    ? { rejectUnauthorized: false }
+    : undefined;
+
   const pool = new pg.Pool({
     connectionString,
-    max: 10, // Increased from 2 to handle concurrent requests better
+    max: 10, 
     idleTimeoutMillis: 30000, 
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 15000, // Slightly longer timeout
+    ssl: sslConfig,
   });
 
   pool.on('error', (err) => {
@@ -38,6 +49,17 @@ const getPool = () => {
 };
 
 const prismaClientSingleton = () => {
+  if (typeof window === "undefined" && !process.env.DATABASE_URL) {
+    // Return a proxy that handles missing DB URL during static build analysis
+    return new Proxy({} as any, {
+      get: (target, prop) => {
+        if (prop === '$extends') return () => target;
+        return () => {
+          throw new Error('Prisma executed without DATABASE_URL environment variable');
+        };
+      }
+    });
+  }
   const pool = getPool();
   const adapter = new PrismaPg(pool);
   const baseClient = new PrismaClient({ 

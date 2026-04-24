@@ -6,6 +6,9 @@ import { z } from "zod";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().optional(),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -13,7 +16,7 @@ const signupSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password } = signupSchema.parse(body);
+    const { name, email, password, firstName, lastName, phone } = signupSchema.parse(body);
 
     // Check if user already exists or is the master email
     if (email === "merchant@nexus.shop") {
@@ -41,6 +44,9 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         name,
+        firstName,
+        lastName,
+        phone,
         email,
         password: hashedPassword,
         role: "client", // Default role for new signups

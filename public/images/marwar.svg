@@ -1,7 +1,0 @@
-<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="1000" fill="#FDF8F3"/>
-  <rect x="200" y="200" width="400" height="600" fill="#E5D3C0" fill-opacity="0.3"/>
-  <circle cx="400" cy="500" r="150" stroke="#8B4513" stroke-width="1" fill-opacity="0.1"/>
-  <text x="400" y="900" text-anchor="middle" font-family="serif" font-size="30" fill="#8B4513">MARWAR COLLECTION</text>
-  <path d="M100 100L700 900" stroke="#8B4513" stroke-width="0.2" stroke-opacity="0.1"/>
-</svg>
