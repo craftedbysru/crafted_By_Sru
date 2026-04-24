@@ -15,7 +15,8 @@ const ALLOWED_MIME_TYPES = [
   "video/ogg"
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB limit
+// Increased to 100MB. Direct R2/S3 uploads via signed URLs avoid body size limits.
+const MAX_FILE_SIZE = 100 * 1024 * 1024; 
 
 export async function GET(request: Request) {
   const session = await auth();

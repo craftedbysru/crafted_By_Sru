@@ -163,31 +163,31 @@ export default function Home() {
   return (
     <div className="bg-[#f9f7f2] min-h-screen">
       {/* Hero Section */}
-      <section className="pt-32 pb-16 px-6 max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section className="pt-24 lg:pt-32 pb-16 px-6 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-xl"
+            className="max-w-xl text-center lg:text-left mx-auto lg:mx-0"
           >
-            <p className="text-[11px] uppercase tracking-[0.5em] text-amber-900/60 mb-8 font-medium">{heroContent.subtitle}</p>
-            <h1 className="font-serif-alt text-7xl md:text-[80px] leading-[0.9] text-amber-950 mb-10 tracking-tight">
+            <p className="text-[10px] md:text-[11px] uppercase tracking-[0.5em] text-amber-900/60 mb-6 lg:mb-8 font-medium">{heroContent.subtitle}</p>
+            <h1 className="font-serif-alt text-5xl md:text-7xl lg:text-[80px] leading-[1] md:leading-[0.9] text-amber-950 mb-8 lg:mb-10 tracking-tight">
               {heroContent.title.includes('Every') ? (
                 <>
                   {heroContent.title.split('Every')[0]}
                   <br />
-                  <span className="italic font-light">Every <br /> {heroContent.title.split('Every')[1].trim()}</span>
+                  <span className="italic font-light">Every <br className="hidden md:block" /> {heroContent.title.split('Every')[1].trim()}</span>
                 </>
               ) : (
                 heroContent.title
               )}
             </h1>
-            <p className="text-amber-900/70 text-lg leading-relaxed mb-12 max-w-md">
+            <p className="text-amber-900/70 text-base md:text-lg leading-relaxed mb-10 lg:mb-12 max-w-md mx-auto lg:mx-0">
               {heroContent.description}
             </p>
-            <div className="flex items-center gap-10">
-              <Link href="/catalog" className="px-10 py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 sm:gap-10">
+              <Link href="/catalog" className="w-full sm:w-auto px-10 py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all text-center">
                 Explore the Collection
               </Link>
               <Link href="/about" className="text-[10px] uppercase tracking-[0.3em] text-amber-950 font-bold border-b border-amber-950/20 pb-1 hover:border-amber-950 transition-all">

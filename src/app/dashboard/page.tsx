@@ -99,21 +99,29 @@ export default function MerchantDashboard() {
     }
 
     try {
-      // Try server-side upload first as a more reliable fallback for this environment
-      const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
+      // Step 1: Get signed URL
+      const signedUrlRes = await fetch(`/api/upload?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`, {
+        method: "GET"
+      });
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataUpload,
+      if (!signedUrlRes.ok) {
+        throw new Error("Failed to get upload signature");
+      }
+
+      const { uploadUrl, publicUrl } = await signedUrlRes.json();
+
+      // Step 2: Upload directly to R2/S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
       });
 
       if (!uploadRes.ok) {
-        const errorData = await uploadRes.json();
-        throw new Error(errorData.error || "Upload failed");
+        throw new Error("Cloud storage upload failed");
       }
-
-      const { url: publicUrl } = await uploadRes.json();
 
       // Update state with public URL
       if (type === "video") {
@@ -130,6 +138,8 @@ export default function MerchantDashboard() {
       return publicUrl;
     } catch (err: any) {
       console.error(`${type} upload failed:`, err);
+      // Fallback to legacy POST if GET fails or for smaller files if necessary,
+      // but usually signed URL is more robust for 10MB+
       if (type === "video") setVideoUploadStatus("failed");
       else if (index !== undefined) {
         setImageList(prev => {
@@ -138,7 +148,7 @@ export default function MerchantDashboard() {
           return next;
         });
       }
-      toast.error(`Background ${type} upload failed. You can retry by re-selecting the file.`);
+      toast.error(`Background ${type} upload failed (${err.message}).`);
       return null;
     }
   };
@@ -632,7 +642,7 @@ export default function MerchantDashboard() {
                 </div>
               </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   <StatCard icon={<DollarSign className="text-green-600" />} label="Total Sales" value={`₹${stats.totalSales.toFixed(2)}`} trend="+12.5%" />
                   <StatCard icon={<ShoppingBag className="text-blue-600" />} label="Total Orders" value={stats.totalOrders.toString()} trend="+5.2%" />
                   <StatCard icon={<Clock className="text-amber-600" />} label="Pending Orders" value={stats.pendingOrders.toString()} trend="-2.1%" />
@@ -707,8 +717,8 @@ export default function MerchantDashboard() {
               className="space-y-8"
             >
               <h1 className="font-serif text-4xl text-amber-950 mb-8">Order Management</h1>
-              <div className="bg-white border border-amber-900/10 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white border border-amber-900/10 overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-amber-50/50 border-b border-amber-900/10">
                       <th className="p-6 text-[10px] uppercase tracking-widest font-bold text-amber-900/60">Order ID</th>
@@ -788,7 +798,7 @@ export default function MerchantDashboard() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
                 {Array.isArray(products) && products.map((product) => (
                   <div key={product.id} className="bg-white border border-amber-900/10 group overflow-hidden flex flex-col">
                     <div className="aspect-[4/5] bg-amber-50 relative overflow-hidden">

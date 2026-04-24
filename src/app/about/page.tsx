@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 
 import { useCMS } from "@/hooks/useCMS";
+import { ASSETS } from "@/lib/images";
 
 export default function AboutPage() {
   const { content: cmsContent, loading, getSection } = useCMS("about");
@@ -51,7 +52,7 @@ export default function AboutPage() {
           className="aspect-[4/5] bg-amber-50 overflow-hidden shadow-2xl"
         >
           <img 
-            src={headerContent.image || "https://picsum.photos/seed/craftedbysru-artisan/1200/1500"} 
+            src={headerContent.image || ASSETS.artisan} 
             alt="Handcrafted Heritage" 
             className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
             referrerPolicy="no-referrer"
@@ -66,7 +67,7 @@ export default function AboutPage() {
             <div key={idx} className={`space-y-6 ${idx > 0 ? (idx === 1 ? 'pt-12' : 'pt-24') : ''}`}>
               <div className="h-80 bg-amber-100 overflow-hidden">
                 <img 
-                  src={item.image || `/images/curation-${(idx % 4) + 1}.svg`} 
+                  src={item.image || `/images/curation-${(idx % 4) + 1}.jpeg`} 
                   alt={item.title} 
                   className="w-full h-full object-cover hover:scale-110 transition-all duration-700"
                 />
