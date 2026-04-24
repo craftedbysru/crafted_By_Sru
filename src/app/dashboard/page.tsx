@@ -105,37 +105,60 @@ export default function MerchantDashboard() {
       });
 
       if (!signedUrlRes.ok) {
-        throw new Error("Failed to get upload signature");
+        const errorData = await signedUrlRes.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to get upload signature (${signedUrlRes.status})`);
       }
 
       const { uploadUrl, publicUrl } = await signedUrlRes.json();
 
       // Step 2: Upload directly to R2/S3
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Cloud storage upload failed");
+      let finalPublicUrl = publicUrl;
+      try {
+        const uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+  
+        if (!uploadRes.ok) {
+          throw new Error("Direct upload failed, trying fallback...");
+        }
+      } catch (putErr) {
+        console.warn("Direct R2 upload failed (possibly CORS). Falling back to server-side POST...", putErr);
+        
+        // Fallback: Upload via our own server-side POST route
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+  
+        const fbRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+  
+        if (!fbRes.ok) {
+          const fbError = await fbRes.json().catch(() => ({}));
+          throw new Error(fbError.error || `Server fallback failed (${fbRes.status})`);
+        }
+  
+        const fbData = await fbRes.json();
+        finalPublicUrl = fbData.url;
       }
-
+  
       // Update state with public URL
       if (type === "video") {
         setVideoUploadStatus("success");
-        setFormData(prev => ({ ...prev, videoUrl: publicUrl }));
+        setFormData(prev => ({ ...prev, videoUrl: finalPublicUrl }));
         toast.success("Video uploaded successfully");
       } else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
-          if (next[index]) next[index] = { ...next[index], uploadStatus: "success", publicUrl };
+          if (next[index]) next[index] = { ...next[index], uploadStatus: "success", publicUrl: finalPublicUrl };
           return next;
         });
       }
-      return publicUrl;
+      return finalPublicUrl;
     } catch (err: any) {
       console.error(`${type} upload failed:`, err);
       // Fallback to legacy POST if GET fails or for smaller files if necessary,

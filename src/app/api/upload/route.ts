@@ -32,6 +32,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing file name or type" }, { status: 400 });
   }
 
+  if (!R2_BUCKET_NAME) {
+    console.error("R2_BUCKET_NAME is missing");
+    return NextResponse.json({ error: "Storage bucket not configured" }, { status: 500 });
+  }
+
   if (!ALLOWED_MIME_TYPES.includes(fileType)) {
     return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
   }
@@ -85,7 +90,7 @@ export async function POST(request: Request) {
 
     // Security: Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: "File too large. Maximum size is 50MB." }, { status: 400 });
+      return NextResponse.json({ error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.` }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
