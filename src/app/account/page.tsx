@@ -461,7 +461,6 @@ export default function AccountPage() {
                 </div>
               </motion.div>
             )}
-}
           </AnimatePresence>
         </div>
       </div>

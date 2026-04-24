@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { Mail, Lock, ArrowRight, User, UserPlus } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, UserPlus, Phone } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Suspense } from "react";
