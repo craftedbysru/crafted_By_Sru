@@ -8,12 +8,17 @@ export default function ShippingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const cacheKey = "sru_cms_cache_shipping";
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) setCmsContent(JSON.parse(cached));
+
     const fetchContent = async () => {
       try {
         const res = await fetch("/api/content?page=shipping");
         if (res.ok) {
           const data = await res.json();
           setCmsContent(data);
+          localStorage.setItem(cacheKey, JSON.stringify(data));
         }
       } catch (error) {
         console.error("Error fetching shipping page content:", error);
@@ -31,8 +36,8 @@ export default function ShippingPage() {
 
   const mainContent = getContent("main", {
     title: "Shipping & Delivery",
-    intro: "We deliver our artisanal treasures worldwide with the utmost care.",
-    details: "Standard shipping takes 5-7 business days across India. International orders may vary."
+    intro: "We deliver our handcrafted treasures worldwide with the utmost care.",
+    details: "Standard shipping takes 10-15 business days across India. International orders may vary."
   });
 
   if (loading) {

@@ -12,7 +12,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
   console.log(`Subject: Welcome to Crafted by Sru, ${name}!`);
   console.log("Content:");
   console.log(`Hello ${name},`);
-  console.log("Thank you for joining Crafted by Sru. We're excited to have you as a member of our artisan community.");
+  console.log("Thank you for joining Crafted by Sru. We're excited to have you as a member of our heritage community.");
   console.log("You can now browse our full catalog and manage your orders.");
   console.log("Happy shopping!");
   console.log("-----------------------------------------");

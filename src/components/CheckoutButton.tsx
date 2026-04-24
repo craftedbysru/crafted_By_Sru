@@ -66,7 +66,7 @@ export default function CheckoutButton({
         amount: order.amount,
         currency: order.currency,
         name: "Crafted by Sru",
-        description: "Artisan Creations Purchase",
+        description: "Heritage Curations Purchase",
         order_id: order.id,
         handler: async function (response: any) {
           try {

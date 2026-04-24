@@ -80,9 +80,63 @@ export default function MerchantDashboard() {
     stock: "10",
     isBestSeller: false
   });
-  const [imageList, setImageList] = useState<{file?: File, preview: string}[]>([]);
+  const [imageList, setImageList] = useState<{file?: File, preview: string, uploadStatus?: "pending" | "success" | "failed", publicUrl?: string}[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUploadStatus, setVideoUploadStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [uploading, setUploading] = useState(false);
+
+  // Background upload helper
+  const startBackgroundUpload = async (file: File, type: "image" | "video", index?: number) => {
+    if (type === "video") setVideoUploadStatus("pending");
+    else if (index !== undefined) {
+      setImageList(prev => {
+        const next = [...prev];
+        if (next[index]) next[index] = { ...next[index], uploadStatus: "pending" };
+        return next;
+      });
+    }
+
+    try {
+      // 1. Get presigned URL
+      const presignedRes = await fetchWithRetry(`/api/upload?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`);
+      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadUrl, publicUrl } = await presignedRes.json();
+
+      // 2. Direct upload to R2
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      // 3. Update state with public URL
+      if (type === "video") {
+        setVideoUploadStatus("success");
+        setFormData(prev => ({ ...prev, videoUrl: publicUrl }));
+      } else if (index !== undefined) {
+        setImageList(prev => {
+          const next = [...prev];
+          if (next[index]) next[index] = { ...next[index], uploadStatus: "success", publicUrl };
+          return next;
+        });
+      }
+      return publicUrl;
+    } catch (err) {
+      console.error(`${type} upload failed:`, err);
+      if (type === "video") setVideoUploadStatus("failed");
+      else if (index !== undefined) {
+        setImageList(prev => {
+          const next = [...prev];
+          if (next[index]) next[index] = { ...next[index], uploadStatus: "failed" };
+          return next;
+        });
+      }
+      toast.error(`Background ${type} upload failed. You can retry by re-selecting the file.`);
+      return null;
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -98,7 +152,12 @@ export default function MerchantDashboard() {
       });
 
       Promise.all(newImages).then(results => {
+        const startIdx = imageList.length;
         setImageList(prev => [...prev, ...results]);
+        // Trigger background uploads for each new file
+        results.forEach((item, i) => {
+          startBackgroundUpload(item.file, "image", startIdx + i);
+        });
       });
     }
   };
@@ -111,7 +170,7 @@ export default function MerchantDashboard() {
     const file = e.target.files?.[0];
     if (file) {
       setVideoFile(file);
-      // We'll upload this during handleSubmit
+      startBackgroundUpload(file, "video");
     }
   };
 
@@ -231,69 +290,30 @@ export default function MerchantDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if any uploads are still pending
+    const hasPendingImages = imageList.some(img => img.uploadStatus === "pending");
+    if (hasPendingImages || videoUploadStatus === "pending") {
+      toast.info("Please wait for assets to finish uploading...");
+      return;
+    }
+
     setUploading(true);
     
-    let currentVideoUrl = formData.videoUrl;
-    let uploadedImages: string[] = [];
-
     try {
-      // Use Presigned URLs for much better performance (direct to R2)
-      const uploadPromises = imageList.map(async (item) => {
-        if (item.file) {
-          // 1. Get presigned URL
-          const presignedRes = await fetchWithRetry(`/api/upload?file=${encodeURIComponent(item.file.name)}&type=${encodeURIComponent(item.file.type)}`);
-          if (!presignedRes.ok) throw new Error("Failed to get upload URL for image");
-          const { uploadUrl, publicUrl } = await presignedRes.json();
-
-          // 2. Direct upload to R2
-          const uploadRes = await fetchWithRetry(uploadUrl, {
-            method: "PUT",
-            body: item.file,
-            headers: {
-              "Content-Type": item.file.type,
-            },
-          });
-          if (!uploadRes.ok) throw new Error("Image direct upload failed");
-          
-          return publicUrl;
-        }
-        return item.preview;
-      });
-
-      const videoPromise = videoFile ? (async () => {
-        // 1. Get presigned URL
-        const presignedRes = await fetchWithRetry(`/api/upload?file=${encodeURIComponent(videoFile.name)}&type=${encodeURIComponent(videoFile.type)}`);
-        if (!presignedRes.ok) throw new Error("Failed to get upload URL for video");
-        const { uploadUrl, publicUrl } = await presignedRes.json();
-
-        // 2. Direct upload to R2
-        const uploadRes = await fetchWithRetry(uploadUrl, {
-          method: "PUT",
-          body: videoFile,
-          headers: {
-            "Content-Type": videoFile.type,
-          },
-        });
-        if (!uploadRes.ok) throw new Error("Video direct upload failed");
-        
-        return publicUrl;
-      })() : Promise.resolve(currentVideoUrl);
-
-      const [uploadedImagesResults, videoUrlResult] = await Promise.all([
-        Promise.all(uploadPromises),
-        videoPromise
-      ]);
-      
-      currentVideoUrl = videoUrlResult;
+      // Finalize URLs (use pre-uploaded publicUrl if available, otherwise use preview/string)
+      // This is fast because most uploads are already done in the background
+      const finalImages = imageList.map(img => img.publicUrl || img.preview);
+      const finalVideoUrl = formData.videoUrl;
 
       const method = editingProduct ? "PUT" : "POST";
       const url = editingProduct ? `/api/inventory/${editingProduct.id}` : "/api/inventory";
 
       const payload = {
         ...formData,
-        imageUrl: uploadedImagesResults[0] || "",
-        images: uploadedImagesResults,
-        videoUrl: currentVideoUrl,
+        imageUrl: finalImages[0] || "",
+        images: finalImages,
+        videoUrl: finalVideoUrl,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock)
       };
@@ -314,7 +334,7 @@ export default function MerchantDashboard() {
       }
     } catch (error: any) {
       console.error("Error saving product:", error);
-      toast.error(error.message || "An error occurred during upload");
+      toast.error(error.message || "An error occurred during save");
     } finally {
       setUploading(false);
     }
@@ -707,7 +727,7 @@ export default function MerchantDashboard() {
               <div className="flex justify-between items-end">
                 <div>
                   <h1 className="font-serif text-4xl text-amber-950 mb-2">Inventory</h1>
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Manage your artisan collection.</p>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Manage your heritage collection.</p>
                 </div>
                 <button 
                   onClick={() => handleOpenModal()}
@@ -1019,7 +1039,12 @@ export default function MerchantDashboard() {
                         htmlFor="video-upload"
                         className="w-full py-3 border-b border-amber-900/20 text-amber-950 text-sm cursor-pointer hover:border-amber-900 transition-colors flex justify-between items-center"
                       >
-                        {videoFile ? videoFile.name : (formData.videoUrl ? "Video Attached" : "Upload Video directly")}
+                        <div className="flex items-center gap-2">
+                          {videoUploadStatus === "pending" && <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+                          {videoUploadStatus === "success" && <div className="w-2 h-2 rounded-full bg-green-500" />}
+                          {videoUploadStatus === "failed" && <div className="w-2 h-2 rounded-full bg-red-500" />}
+                          {videoFile ? videoFile.name : (formData.videoUrl ? "Video Attached" : "Upload Video directly")}
+                        </div>
                         <Plus size={14} className="text-amber-900/40" />
                       </label>
                       <p className="text-[8px] text-amber-900/40 uppercase tracking-widest">Or provide a URL below</p>
@@ -1051,7 +1076,22 @@ export default function MerchantDashboard() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {imageList.map((img, idx) => (
                       <div key={idx} className="aspect-square bg-amber-50 border border-amber-900/10 flex items-center justify-center overflow-hidden rounded-sm relative group">
-                        <img src={img.preview} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-all" />
+                        <img src={img.preview} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-all shadow-inner" />
+                        
+                        {/* Upload Status Overlay */}
+                        {img.uploadStatus === "pending" && (
+                          <div className="absolute inset-0 bg-amber-50/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-amber-950 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-[7px] uppercase tracking-widest font-bold text-amber-950">Uploading</span>
+                          </div>
+                        )}
+                        {img.uploadStatus === "failed" && (
+                          <div className="absolute inset-0 bg-red-50/60 backdrop-blur-sm flex flex-col items-center justify-center gap-1">
+                            <AlertCircle size={14} className="text-red-600" />
+                            <span className="text-[7px] uppercase tracking-widest font-bold text-red-600">Failed</span>
+                          </div>
+                        )}
+
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button 
                             type="button"
@@ -1163,7 +1203,7 @@ export default function MerchantDashboard() {
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-amber-950">{selectedOrder.customer?.name || "Guest"}</p>
                       <p className="text-xs text-amber-900/60">{selectedOrder.customer?.email || "No email provided"}</p>
-                      <p className="text-xs text-amber-900/60">{selectedOrder.customer?.phone || "No phone provided"}</p>
+                      <p className="text-xs text-amber-900/60 font-bold">{selectedOrder.phone || selectedOrder.customer?.phone || "No phone provided"}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -1171,9 +1211,11 @@ export default function MerchantDashboard() {
                     <div className="text-xs text-amber-900/60 leading-relaxed">
                       {selectedOrder.shippingAddress ? (
                         <>
+                          <p className="font-bold text-amber-950">{selectedOrder.shippingAddress.name}</p>
                           <p>{selectedOrder.shippingAddress.street}</p>
                           <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zipCode}</p>
                           <p>{selectedOrder.shippingAddress.country}</p>
+                          <p className="mt-1 font-bold">{selectedOrder.phone || selectedOrder.shippingAddress.phone}</p>
                         </>
                       ) : (
                         <p>No address provided</p>

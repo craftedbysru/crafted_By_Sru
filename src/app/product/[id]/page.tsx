@@ -15,7 +15,7 @@ export default function ProductDetail() {
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(25);
   const [isAdded, setIsAdded] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
@@ -32,7 +32,7 @@ export default function ProductDetail() {
   ) : [];
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProduct = async (retries = 3) => {
       try {
         const response = await fetch(`/api/inventory/${params.id}`);
         if (response.ok) {
@@ -44,9 +44,14 @@ export default function ProductDetail() {
           if (cart.some((item: any) => item.id === data.id)) {
             setIsAdded(true);
           }
+        } else if (response.status === 500 && retries > 0) {
+           setTimeout(() => fetchProduct(retries - 1), 1000);
         }
       } catch (error) {
         console.error("Error fetching product:", error);
+        if (retries > 0) {
+          setTimeout(() => fetchProduct(retries - 1), 1000);
+        }
       } finally {
         setLoading(false);
       }
@@ -89,7 +94,7 @@ export default function ProductDetail() {
       toast.warning(`Only ${product.stock} items available in stock`);
     }
   };
-  const decrementQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
+  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 1 : 25));
 
   if (loading) {
     return (
@@ -270,7 +275,7 @@ export default function ProductDetail() {
             <div>
               <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Shipping</h4>
               <p className="text-xs opacity-50 leading-relaxed text-amber-900">
-                Ships within 3-5 business days. Worldwide delivery available.
+                Ships within 10-15 business days. Worldwide delivery available.
               </p>
             </div>
           </div>

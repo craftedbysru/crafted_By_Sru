@@ -69,7 +69,7 @@ export default function OrderSuccessPage() {
             </div>
             <h1 className="font-serif text-4xl md:text-5xl text-amber-950">Thank you for your order</h1>
             <p className="text-amber-900/60 max-w-md mx-auto">
-              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been placed successfully and is being processed by our artisans.
+              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been placed successfully and is being processed by our heritage team.
             </p>
           </div>
 
@@ -108,14 +108,16 @@ export default function OrderSuccessPage() {
               </div>
               <div className="space-y-4">
                 <div className="text-xs text-amber-900/60 leading-relaxed">
-                  <p className="font-medium text-amber-950 mb-1">{order.customer?.name}</p>
-                  <p>{order.shippingAddress.street}</p>
-                  <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}</p>
-                  <p>{order.shippingAddress.country}</p>
+                  <p className="font-medium text-amber-950 mb-1">{order.shippingAddress?.name || order.customer?.name}</p>
+                  <p>{order.shippingAddress?.street}</p>
+                  <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}</p>
+                  <p>{order.shippingAddress?.country}</p>
+                  <p className="mt-2 font-bold text-amber-950">Mobile: {order.phone || order.shippingAddress?.phone}</p>
                 </div>
                 <div className="bg-amber-50 p-4 rounded-lg">
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Estimated Delivery</p>
-                  <p className="text-xs text-amber-950 font-medium">7-10 Business Days</p>
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Status & Delivery</p>
+                  <p className="text-xs text-amber-950 font-medium">{order.deliveryType || "Express Gift Delivery"}</p>
+                  <p className="text-[10px] text-amber-900/40 mt-1 uppercase">10-15 Business Days</p>
                 </div>
               </div>
             </div>

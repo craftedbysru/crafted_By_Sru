@@ -18,7 +18,7 @@ export default function ContactPage() {
   const detailsContent = getSection("details", {
     email: "concierge@craftedbysru.com",
     phone: "+91 98765 43210",
-    address: "Artisan Quarter, Creative District, Mumbai, India"
+    address: "Creative Quarter, Creative District, Mumbai, India"
   });
 
   const handleSubmit = (e: React.FormEvent) => {

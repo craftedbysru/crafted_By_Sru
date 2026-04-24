@@ -66,7 +66,7 @@ export default function MerchantLoginPage() {
             <ShieldCheck size={32} />
           </div>
           <h1 className="font-serif text-4xl text-amber-950 mb-2">Merchant Access</h1>
-          <p className="text-xs text-amber-900/40 tracking-widest uppercase">Secure portal for artisan partners</p>
+          <p className="text-xs text-amber-900/40 tracking-widest uppercase">Secure portal for heritage partners</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">

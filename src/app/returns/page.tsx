@@ -9,7 +9,7 @@ export default function ReturnsPage() {
 
   const mainContent = getSection("main", {
     title: "Returns & Exchanges",
-    intro: "At Crafted by Sru, we strive for perfection in every piece we curate. Due to the artisanal and handcrafted nature of our products, each item is unique and may exhibit slight variations.",
+    intro: "At Crafted by Sru, we strive for perfection in every piece we curate. Due to the handcrafted and unique nature of our products, each item is one-of-a-kind and may exhibit slight variations.",
     sections: [
       {
         title: "Our Policy",

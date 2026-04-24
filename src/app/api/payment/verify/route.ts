@@ -83,6 +83,7 @@ export async function POST(request: Request) {
             status: "Processing",
             paymentStatus: "paid",
             shippingAddress: orderData.shippingAddress,
+            phone: orderData.shippingAddress.phone || null,
             packagingDetails: orderData.packagingDetails,
             deliveryType: orderData.deliveryType,
             transactions: {
@@ -101,6 +102,42 @@ export async function POST(request: Request) {
             }
           },
         });
+
+        // 4. Auto-save phone and address to user profile if needed
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          include: { addresses: true }
+        });
+
+        if (user) {
+          const updates: any = {};
+          if (!user.phone && orderData.shippingAddress.phone) {
+            updates.phone = orderData.shippingAddress.phone;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await tx.user.update({
+              where: { id: userId },
+              data: updates
+            });
+          }
+
+          // Save address if user has none
+          if (user.addresses.length === 0 && orderData.shippingAddress) {
+            await tx.address.create({
+              data: {
+                userId: userId,
+                name: orderData.shippingAddress.name || user.name,
+                phone: orderData.shippingAddress.phone || user.phone,
+                street: orderData.shippingAddress.street || orderData.shippingAddress.addressLine1 || "",
+                city: orderData.shippingAddress.city || "",
+                state: orderData.shippingAddress.state || "",
+                zipCode: orderData.shippingAddress.zipCode || orderData.shippingAddress.pincode || "",
+                country: orderData.shippingAddress.country || "India"
+              }
+            });
+          }
+        }
 
         return order;
       });

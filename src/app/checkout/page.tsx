@@ -230,7 +230,7 @@ export default function CheckoutPage() {
                         <Truck size={24} className={deliveryType === "Standard Artisan Shipping" ? "text-amber-950" : "text-amber-900/40"} />
                         <div className="text-left">
                           <p className={`text-sm font-bold uppercase tracking-widest ${deliveryType === "Standard Artisan Shipping" ? "text-amber-950" : "text-amber-900/40"}`}>Standard Artisan Shipping</p>
-                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 5-7 business days</p>
+                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 10-15 business days</p>
                         </div>
                       </div>
                       <span className="text-sm font-medium text-amber-950">₹250.00</span>
@@ -245,7 +245,7 @@ export default function CheckoutPage() {
                         </div>
                         <div className="text-left">
                           <p className={`text-sm font-bold uppercase tracking-widest ${deliveryType === "Express Heritage Delivery" ? "text-amber-950" : "text-amber-900/40"}`}>Express Heritage Delivery</p>
-                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 2-3 business days</p>
+                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 10-15 business days</p>
                         </div>
                       </div>
                       <span className="text-sm font-medium text-amber-950">₹650.00</span>

@@ -125,7 +125,7 @@ function CatalogContent() {
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
-      cart.push({ ...product, quantity: 1 });
+      cart.push({ ...product, quantity: 25 });
     }
 
     localStorage.setItem("sru_cart", JSON.stringify(cart));
@@ -226,7 +226,7 @@ function CatalogContent() {
                           {product.name}
                         </h3>
                         <div className="flex items-center gap-3 mt-1">
-                          <p className="text-[10px] italic text-amber-900/40">Artisans of India</p>
+                          <p className="text-[10px] italic text-amber-900/40">Heritage of India</p>
                           {getProductCartCount(product.id) > 0 && (
                             <span className="text-[9px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
                               {getProductCartCount(product.id)} in cart
@@ -283,7 +283,7 @@ function CatalogContent() {
       <div className="mt-32 bg-amber-50/50 p-12 md:p-24 text-center border border-amber-900/5 rounded-3xl">
         <h2 className="font-serif text-4xl md:text-6xl text-amber-950 mb-6">Planning a Grand Celebration?</h2>
         <p className="text-amber-900/60 text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
-          Our concierge team assists with custom packaging, artisan storytelling cards, and bulk logistical coordination for weddings and corporate events.
+          Our concierge team assists with custom packaging, heritage storytelling cards, and bulk logistical coordination for weddings and corporate events.
         </p>
         <Link 
           href="/contact"

@@ -5,15 +5,35 @@ export function useCMS(page: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchContent() {
+    const cacheKey = `sru_cms_cache_${page}`;
+    
+    // Load from cache initially if available
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setContent(JSON.parse(cached));
+        setLoading(false); // We have at least some content
+      } catch (e) {
+        console.error("Cache parse error", e);
+      }
+    }
+
+    async function fetchContent(retries = 3) {
       try {
         const res = await fetch(`/api/content?page=${page}`);
         if (res.ok) {
           const data = await res.json();
           setContent(data);
+          // Update cache on success
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        } else if (retries > 0) {
+          setTimeout(() => fetchContent(retries - 1), 2000);
         }
       } catch (error) {
         console.error(`Error fetching CMS content for ${page}:`, error);
+        if (retries > 0) {
+          setTimeout(() => fetchContent(retries - 1), 2000);
+        }
       } finally {
         setLoading(false);
       }

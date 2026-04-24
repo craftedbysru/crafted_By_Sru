@@ -90,7 +90,7 @@ function SignUpForm() {
             <UserPlus size={32} />
           </div>
           <h1 className="font-serif text-4xl text-amber-950 mb-2">Join Our Community</h1>
-          <p className="text-xs text-amber-900/40 tracking-widest uppercase">Create your artisan account</p>
+          <p className="text-xs text-amber-900/40 tracking-widest uppercase">Create your heritage account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">

@@ -18,7 +18,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "Crafted by Sru",
-  description: "Curated artisan creations for your home and lifestyle.",
+  description: "Curated heritage creations for your home and lifestyle.",
 };
 
 import { Providers } from "@/components/Providers";

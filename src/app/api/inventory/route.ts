@@ -28,7 +28,8 @@ export async function GET(request: Request) {
     const limit = limitStr ? parseInt(limitStr) : undefined;
     const sort = searchParams.get("sort") === "desc" ? { createdAt: "desc" as const } : undefined;
     const search = searchParams.get("search");
-    const categoryId = searchParams.get("categoryId") || searchParams.get("category");
+    const categoryIdRaw = searchParams.get("categoryId") || searchParams.get("category");
+    const categoryId = (categoryIdRaw === "null" || categoryIdRaw === "undefined" || !categoryIdRaw) ? null : categoryIdRaw;
     
     // Safety check for NaN limit
     const validatedLimit = (limit !== undefined && !isNaN(limit)) ? limit : undefined;
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     if (categoryId && categoryId !== "all" && categoryId !== "All") {
       filter.OR = [
         { categoryId: categoryId },
-        { category: categoryId }
+        { category: { contains: categoryId, mode: 'insensitive' } }
       ];
     }
     if (search) {

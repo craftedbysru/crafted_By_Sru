@@ -211,7 +211,12 @@ export const Navbar = () => {
                   {searchResults.map((product) => (
                     <Link key={product.id} href={`/product/${product.id}`} className="flex gap-4 group">
                       <div className="w-20 h-24 overflow-hidden bg-amber-50">
-                        <img src={product.imageUrl || product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                        <img 
+                          src={product.imageUrl || (Array.isArray(product.images) && product.images[0]) || product.image || "https://picsum.photos/seed/product/200/200"} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          referrerPolicy="no-referrer" 
+                        />
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-widest opacity-50 text-amber-900">{product.category}</p>
@@ -222,6 +227,11 @@ export const Navbar = () => {
                   ))}
                   {searchQuery.length > 1 && searchResults.length === 0 && (
                     <p className="text-sm text-amber-900/40 italic">No results found for "{searchQuery}"</p>
+                  )}
+                  {searchQuery.length > 1 && searchResults.length > 0 && (
+                    <Link href={`/catalog?search=${encodeURIComponent(searchQuery)}`} className="col-span-full text-center py-4 text-[10px] uppercase tracking-widest font-bold text-amber-900 border-t border-amber-900/5 hover:bg-amber-50 rounded-lg mt-4">
+                      View all {searchResults.length} results in Catalog
+                    </Link>
                   )}
                 </div>
               </div>

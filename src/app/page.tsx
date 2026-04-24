@@ -38,6 +38,20 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const cacheKey_content = "sru_cms_cache_home";
+    const cacheKey_products = "sru_inventory_cache_featured";
+    const cacheKey_categories = "sru_categories_cache";
+
+    // Load from cache initially
+    const cachedContent = localStorage.getItem(cacheKey_content);
+    if (cachedContent) setCmsContent(JSON.parse(cachedContent));
+    
+    const cachedProducts = localStorage.getItem(cacheKey_products);
+    if (cachedProducts) setFeaturedProducts(JSON.parse(cachedProducts));
+
+    const cachedCats = localStorage.getItem(cacheKey_categories);
+    if (cachedCats) setCategories(JSON.parse(cachedCats));
+
     const fetchData = async () => {
       try {
         const [productsRes, contentRes, categoriesRes] = await Promise.all([
@@ -56,17 +70,19 @@ export default function Home() {
             }
           }
           setFeaturedProducts(products);
+          localStorage.setItem(cacheKey_products, JSON.stringify(products));
         }
 
         if (contentRes.ok) {
           const content = await contentRes.json();
           setCmsContent(content);
+          localStorage.setItem(cacheKey_content, JSON.stringify(content));
         }
 
         if (categoriesRes.ok) {
           const cats = await categoriesRes.json();
-          // The API now returns images for each category
           setCategories(cats);
+          localStorage.setItem(cacheKey_categories, JSON.stringify(cats));
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -99,7 +115,7 @@ export default function Home() {
   const soulContent = getContent("soul-of-sru", {
     title: "The Soul of Sru",
     quote: "Honoring heritage, one knot at a time.",
-    description1: "We believe a gift should be a bridge between the giver's intent and the artisan's legacy. 'Sru' — meaning 'to flow' or 'to create' — reflects our commitment to the fluid continuity of Indian craft.",
+    description1: "We believe a gift should be a bridge between the giver's intent and the heritage legacy. 'Sru' — meaning 'to flow' or 'to create' — reflects our commitment to the fluid continuity of Indian craft.",
     description2: "Every piece in our collection is sourced directly from clusters across Rajasthan, Bengal, and Tamil Nadu, ensuring that the luxury you experience supports the hands that built it."
   });
 
@@ -192,7 +208,7 @@ export default function Home() {
             >
               <img 
                 src={ASSETS.heroSecondary} 
-                alt="Artisan Detail" 
+                alt="Heritage Detail" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
@@ -217,7 +233,7 @@ export default function Home() {
               <div className="aspect-square overflow-hidden shadow-2xl bg-amber-50">
                 <img 
                   src={ASSETS.artisan} 
-                  alt="Artisan at work" 
+                  alt="Heritage Curation" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -406,7 +422,7 @@ export default function Home() {
             <div className="max-w-xl">
               <p className="text-[10px] uppercase tracking-[0.5em] text-amber-900/40 mb-4 font-bold">Chronicles of Craft</p>
               <h2 className="font-serif-alt text-6xl text-amber-950 italic">{recentContent.title}</h2>
-              <p className="text-amber-900/60 mt-6 text-lg">Our latest curations, freshly gathered from India's most talented artisan clusters.</p>
+              <p className="text-amber-900/60 mt-6 text-lg">Our latest curations, freshly gathered from India's most talented heritage clusters.</p>
             </div>
             <Link href="/catalog?sort=desc" className="group flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-amber-950 border-b border-amber-950/20 pb-1">
               Explore the Archive <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -492,7 +508,7 @@ export default function Home() {
                         </div>
                         <div className="mt-4">
                           <h4 className="font-serif text-xl text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h4>
-                          <p className="text-[9px] uppercase tracking-widest text-amber-900/40 mt-1 font-bold">Artisan Collection</p>
+                          <p className="text-[9px] uppercase tracking-widest text-amber-900/40 mt-1 font-bold">Heritage Collection</p>
                         </div>
                       </Link>
                     </motion.div>
@@ -501,7 +517,7 @@ export default function Home() {
               </>
             ) : (
               <div className="col-span-12 py-32 text-center border border-dashed border-amber-900/10 rounded-2xl">
-                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Preparing our latest artisanal chronicles...</p>
+                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Preparing our latest handcrafted chronicles...</p>
               </div>
             )}
           </div>

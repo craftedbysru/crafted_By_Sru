@@ -1,5 +1,0 @@
-name = "crafted-by-sru"
-compatability_date = "2026-01-01"
-
-[build]
-command = ="prism generate && npx @cloudflare/next-on-pages"

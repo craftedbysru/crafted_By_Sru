@@ -17,6 +17,8 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "addresses">("orders");
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [newAddress, setNewAddress] = useState({
+    name: "",
+    phone: "",
     street: "",
     city: "",
     state: "",
@@ -106,7 +108,7 @@ export default function AccountPage() {
       if (response.ok) {
         toast.success("Address added successfully");
         setIsAddressModalOpen(false);
-        setNewAddress({ street: "", city: "", state: "", zipCode: "", country: "India" });
+        setNewAddress({ name: "", phone: "", street: "", city: "", state: "", zipCode: "", country: "India" });
         fetchData();
       } else {
         toast.error("Failed to add address");
@@ -238,25 +240,44 @@ export default function AccountPage() {
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Total Amount</p>
                             <p className="text-sm font-medium text-amber-950">₹{order.total.toFixed(2)}</p>
                           </div>
+                          <div className="space-y-1">
+                             <Link 
+                              href={`/orders/${order.id}`}
+                              className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900/20 pb-0.5 hover:border-amber-950 transition-all block mt-2"
+                            >
+                              View Details
+                            </Link>
+                          </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-4">
-                          {order.items.map((item: any, idx: number) => (
-                            <div key={idx} className="flex gap-4 items-center bg-white p-3 border border-amber-900/5">
-                              <div className="w-12 h-16 bg-amber-50 overflow-hidden flex-shrink-0">
-                                <img 
-                                  src={item.image || getPlaceholderImage(item.category)} 
-                                  alt={item.name} 
-                                  className="w-full h-full object-cover"
-                                  referrerPolicy="no-referrer"
-                                />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="flex flex-wrap gap-4">
+                            {order.items.map((item: any, idx: number) => (
+                              <div key={idx} className="flex gap-4 items-center bg-white p-3 border border-amber-900/5">
+                                <div className="w-12 h-16 bg-amber-50 overflow-hidden flex-shrink-0">
+                                  <img 
+                                    src={item.image || item.imageUrl || getPlaceholderImage(item.category)} 
+                                    alt={item.name} 
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-amber-950">{item.name}</p>
+                                  <p className="text-[10px] text-amber-900/40 uppercase tracking-widest">Qty: {item.quantity}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs font-medium text-amber-950">{item.name}</p>
-                                <p className="text-[10px] text-amber-900/40 uppercase tracking-widest">Qty: {item.quantity}</p>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                          <div className="space-y-2">
+                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Shipping To</p>
+                             <div className="text-xs text-amber-900/60 leading-relaxed">
+                               <p className="font-bold text-amber-950">{order.shippingAddress?.name || session?.user?.name}</p>
+                               <p>{order.shippingAddress?.street}</p>
+                               <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}</p>
+                               <p className="mt-1 font-bold">{order.phone || order.shippingAddress?.phone}</p>
+                             </div>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -300,6 +321,7 @@ export default function AccountPage() {
                         >
                           <Trash2 size={16} />
                         </button>
+                        <p className="text-sm text-amber-950 mb-1 font-bold">{address.name} ({address.phone})</p>
                         <p className="text-sm text-amber-950 mb-1">{address.street}</p>
                         <p className="text-sm text-amber-950 mb-1">{address.city}, {address.state} {address.zipCode}</p>
                         <p className="text-sm text-amber-950">{address.country}</p>
@@ -332,6 +354,34 @@ export default function AccountPage() {
             >
               <h3 className="font-serif text-2xl text-amber-950 mb-8">Add New Address</h3>
               <form onSubmit={handleAddAddress} className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Full Name</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={newAddress.name}
+                      onChange={(e) => setNewAddress({...newAddress, name: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                      placeholder="Enter receiver's name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
+                    <input 
+                      required
+                      type="tel" 
+                      maxLength={10}
+                      value={newAddress.phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setNewAddress({...newAddress, phone: val});
+                      }}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                      placeholder="10-digit number"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Street Address</label>
                   <input 
@@ -374,9 +424,14 @@ export default function AccountPage() {
                     <input 
                       required
                       type="text" 
+                      maxLength={6}
                       value={newAddress.zipCode}
-                      onChange={(e) => setNewAddress({...newAddress, zipCode: e.target.value})}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setNewAddress({...newAddress, zipCode: val});
+                      }}
                       className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                      placeholder="6 digits"
                     />
                   </div>
                   <div className="space-y-2">

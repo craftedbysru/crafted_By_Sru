@@ -27,7 +27,7 @@ export default function CartPage() {
   const updateQuantity = (id: string, delta: number) => {
     const newCart = cart.map((item) => {
       if (item.id === id) {
-        const newQty = Math.max(1, item.quantity + delta);
+        const newQty = Math.max(25, item.quantity + delta);
         if (newQty > (item.stock || 999)) {
           toast.error(`Only ${item.stock} items available in stock.`);
           return item;

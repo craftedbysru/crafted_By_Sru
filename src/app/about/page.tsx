@@ -3,42 +3,21 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 
+import { useCMS } from "@/hooks/useCMS";
+
 export default function AboutPage() {
-  const [cmsContent, setCmsContent] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { content: cmsContent, loading, getSection } = useCMS("about");
 
-  useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const res = await fetch("/api/content?page=about");
-        if (res.ok) {
-          const data = await res.json();
-          setCmsContent(data);
-        }
-      } catch (error) {
-        console.error("Error fetching about page content:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContent();
-  }, []);
-
-  const getContent = (section: string, defaults: any) => {
-    const item = cmsContent.find(c => c.section === section);
-    return item ? { ...defaults, ...item.content } : defaults;
-  };
-
-  const headerContent = getContent("header", {
+  const headerContent = getSection("header", {
     title: "Our Story",
-    subtitle: "The Artisan Legacy",
-    description: "Curated Heritage was born out of a deep appreciation for Indian artisanal craftsmanship and the timeless beauty of handmade objects."
+    subtitle: "The Heritage Legacy",
+    description: "Curated Heritage was born out of a deep appreciation for Indian handcrafted heritage and the timeless beauty of handmade objects."
   });
 
-  const missionContent = getContent("mission", {
+  const missionContent = getSection("mission", {
     title: "Our Mission",
     items: [
-      { title: "Ethical Sourcing", content: "We ensure fair wages and safe working conditions for all our artisan partners." },
+      { title: "Ethical Sourcing", content: "We ensure fair wages and safe working conditions for all our heritage partners." },
       { title: "Preserving Heritage", content: "We help keep ancient traditions alive for future generations." },
       { title: "Modern Design", content: "We adapt traditional crafts for the modern aesthetic without losing their soul." }
     ]
@@ -73,7 +52,7 @@ export default function AboutPage() {
         >
           <img 
             src={headerContent.image || "https://images.unsplash.com/photo-1590739293931-694800366668?auto=format&fit=crop&q=80"} 
-            alt="Artisan Craftsmanship" 
+            alt="Handcrafted Heritage" 
             className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
             referrerPolicy="no-referrer"
           />
