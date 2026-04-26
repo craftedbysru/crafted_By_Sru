@@ -30,6 +30,15 @@ export const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     
     const updateCartCount = () => {
+      // Reset cart on first access to clear any potential ghost data from previous versions
+      const initialized = localStorage.getItem("sru_cart_init_v3");
+      if (!initialized) {
+        localStorage.removeItem("sru_cart");
+        localStorage.setItem("sru_cart_init_v3", "true");
+        window.dispatchEvent(new Event("sru_cart_change"));
+        return;
+      }
+
       const cart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
       const count = cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
       setCartCount(count);
@@ -99,7 +108,9 @@ export const Navbar = () => {
       isScrolled ? "bg-white shadow-md border-b border-amber-900/10 py-3" : "bg-transparent"
     )}>
       <Link href="/" className="flex items-center gap-2">
-        <span className="font-serif italic text-xl md:text-2xl tracking-tighter text-amber-950">Crafted by Sru</span>
+        <div className="flex flex-col">
+          <span className="font-serif italic text-xl md:text-2xl tracking-tighter text-amber-950 leading-none">Crafted by Sru</span>
+        </div>
       </Link>
         <div className="hidden md:flex items-center gap-8">
           {userRole === "merchant" ? (
@@ -193,29 +204,29 @@ export const Navbar = () => {
               exit={{ y: -50 }}
               className="bg-white px-6 py-8 shadow-2xl"
             >
-              <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-950/40">Search Catalog</span>
+              <div className="max-w-4xl mx-auto w-full">
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-amber-950/40">Search Catalog</span>
                   <button onClick={() => setIsSearchOpen(false)} className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30" size={18} />
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="relative flex-1 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30 group-focus-within:text-amber-900/60 transition-colors" size={16} />
                     <input 
                       autoFocus
                       type="text" 
                       placeholder="Search for heritage gifts, artisan crafts..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full text-sm font-medium text-amber-950 placeholder:text-amber-950/20 border border-amber-900/10 bg-amber-50/50 px-12 py-4 outline-none focus:border-amber-900/30 focus:bg-amber-50 transition-all shadow-inner"
+                      className="w-full text-sm font-medium text-amber-950 placeholder:text-amber-950/20 border border-amber-900/10 bg-amber-50/30 px-12 py-3.5 outline-none focus:border-amber-900/30 focus:bg-white transition-all shadow-sm"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                   <AnimatePresence mode="popLayout">
                     {searchResults.map((product) => (
                       <motion.div

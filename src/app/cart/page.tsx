@@ -29,15 +29,9 @@ export default function CartPage() {
   const calculateShipping = () => {
     if (cart.length === 0) return 0;
     
-    let totalShipping = Number(shippingRules.baseCharge) || 0;
-    
-    // per item surcharge
-    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-    totalShipping += totalItems * (Number(shippingRules.perItemSurcharge) || 0);
-    
-    // User requested to remove category modifiers for shipping
-    
-    return totalShipping;
+    // User requested to have only one amount field for shipping.
+    // Using shippingCharge as a flat rate.
+    return Number(shippingRules.shippingCharge) || 500;
   };
 
   const shipping = calculateShipping();
@@ -45,10 +39,10 @@ export default function CartPage() {
 
   useEffect(() => {
     // Reset cart on first access to clear any potential ghost data from previous versions
-    const initialized = localStorage.getItem("sru_cart_init_v2");
+    const initialized = localStorage.getItem("sru_cart_init_v3");
     if (!initialized) {
       localStorage.removeItem("sru_cart");
-      localStorage.setItem("sru_cart_init_v2", "true");
+      localStorage.setItem("sru_cart_init_v3", "true");
     }
 
     const loadCart = () => {

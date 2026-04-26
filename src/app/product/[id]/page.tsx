@@ -21,10 +21,10 @@ export default function ProductDetail() {
   const [isAdded, setIsAdded] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
-  const { getSection: getContactCMS } = useCMS("config");
+  const { getSection: getContactCMS } = useCMS("contact");
   const contactInfo = getContactCMS("details", {
     email: "concierge@craftedbysru.com",
-    phone: "+91 98765 43210"
+    phone: "+91 93426 46579"
   });
 
   const productImages = product ? (

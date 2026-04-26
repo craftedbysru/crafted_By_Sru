@@ -1007,7 +1007,7 @@ export default function MerchantDashboard() {
                     <p className="text-[10px] uppercase tracking-widest text-amber-900/40">No sections found for this page.</p>
                     <p className="text-xs text-amber-900/60 max-w-xs mx-auto">
                       Use the "Add Section" button to create content. 
-                      {selectedCmsPage === "terms" && " (Suggested section ID: 'main' with 'title', 'intro', and 'sections' list)"}
+                      {selectedCmsPage === "terms" && " (Suggested section ID: 'main' with keys: 'title', 'intro', 'sections' (as list))"}
                       {selectedCmsPage === "return-policy" && " (Suggested section ID: 'policy' with 'title' and 'content')"}
                     </p>
                   </div>
@@ -1031,10 +1031,10 @@ export default function MerchantDashboard() {
 
               <div className="grid grid-cols-1 gap-12">
                 <CMSSectionEditor 
-                  title="Global Shipping Rules" 
+                  title="Global Shipping Rate" 
                   page="config" 
                   section="shipping" 
-                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping")?.content || { baseCharge: 500, perItemSurcharge: 0 }}
+                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping")?.content || { shippingCharge: 500 }}
                   onSave={fetchData}
                   products={products}
                   categories={categories}

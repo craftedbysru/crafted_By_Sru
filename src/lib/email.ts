@@ -1,10 +1,9 @@
-import { toast } from "sonner";
-
 import { Resend } from "resend";
 
 let resendClient: Resend | null = null;
 
 function getResend() {
+  if (typeof window !== "undefined") return null;
   if (!resendClient) {
     const key = process.env.RESEND_API_KEY;
     if (key) {
@@ -19,7 +18,6 @@ function getResend() {
  * Uses Resend in production if RESEND_API_KEY is provided.
  * Falls back to simulation/logging for development or if key is missing.
  */
-
 export async function sendEmail({ to, subject, html, type }: { to: string, subject: string, html: string, type: string }) {
   console.log(`[EMAIL DISPATCH] To: ${to}, Subject: ${subject}, Type: ${type}`);
   
@@ -68,36 +66,5 @@ export async function sendEmail({ to, subject, html, type }: { to: string, subje
   return { success: true, messageId: Math.random().toString(36).substring(7) };
 }
 
-export const EMAIL_TEMPLATES = {
-  welcome: (name: string) => ({
-    subject: `Welcome to Sree Rama Utsav, ${name}`,
-    html: `<div style="font-family: serif; color: #451a03; padding: 20px;"><h1>Welcome, ${name}!</h1><p>Thank you for joining our heritage community. We are honored to share our authentic artistry with you.</p></div>`
-  }),
-  orderConfirmation: (orderId: string, total: number) => ({
-    subject: `Selection Confirmed - Order #${orderId.toUpperCase()}`,
-    html: `<div style="font-family: serif; color: #451a03; padding: 20px;"><h1>Order Confirmed</h1><p>Your order #${orderId.toUpperCase()} has been received and is being prepared with artisanal care.</p><p>Total Amount: ₹${total.toLocaleString()}</p></div>`
-  }),
-  passwordReset: (resetToken: string) => ({
-    subject: `Reset Your Sree Rama Utsav Password`,
-    html: `<div style="font-family: serif; color: #451a03; padding: 20px;"><h1>Security Request</h1><p>Please use the link below to reset your password.</p><p><a href="${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}">Reset Password</a></p></div>`
-  })
-};
-
-export async function sendWelcomeEmail(email: string, name: string) {
-  const { subject, html } = EMAIL_TEMPLATES.welcome(name);
-  return sendEmail({ to: email, subject, html, type: "WELCOME" });
-}
-
-export async function sendOrderConfirmationEmail(email: string, orderId: string, total: number) {
-  const { subject, html } = EMAIL_TEMPLATES.orderConfirmation(orderId, total);
-  return sendEmail({ to: email, subject, html, type: "ORDER_CONFIRMATION" });
-}
-
-export async function sendPasswordResetEmail(email: string, token: string) {
-  const { subject, html } = EMAIL_TEMPLATES.passwordReset(token);
-  return sendEmail({ to: email, subject, html, type: "PASSWORD_RESET" });
-}
-
-export function getOrderConfirmationTemplate(orderId: string, total: number) {
-  return EMAIL_TEMPLATES.orderConfirmation(orderId, total).html;
-}
+// Re-export templates for convenience, but from the templates file
+export { EMAIL_TEMPLATES } from "./email-templates";

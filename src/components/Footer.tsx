@@ -19,7 +19,7 @@ export const Footer = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16">
         <div className="col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-8">
-            <span className="font-serif italic text-3xl tracking-tighter text-white">Crafted by Sru</span>
+            <span className="font-serif italic text-3xl tracking-tighter text-white whitespace-nowrap">Crafted by Sru</span>
           </Link>
           <p className="text-sm opacity-60 max-w-sm leading-relaxed text-amber-50/80">
             Celebrating the beauty of handmade artistry. Each piece is uniquely crafted with passion and precision, preserving centuries-old Indian traditions for the modern home.

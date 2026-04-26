@@ -97,15 +97,9 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   
   const calculateShipping = () => {
-    let totalShipping = Number(shippingRules.baseCharge) || 0;
-    
-    // per item surcharge
-    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-    totalShipping += totalItems * (Number(shippingRules.perItemSurcharge) || 0);
-    
-    // User requested to remove category modifiers
-    
-    return totalShipping;
+    // User requested to have only one amount field for shipping.
+    // Using shippingCharge as a flat rate.
+    return Number(shippingRules.shippingCharge) || 500;
   };
 
   const shipping = calculateShipping();

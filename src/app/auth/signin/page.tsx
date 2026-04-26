@@ -107,10 +107,13 @@ function SignInForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40 flex items-center gap-2">
-              <Lock size={12} />
-              Password
-            </label>
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40 flex items-center gap-2">
+                <Lock size={12} />
+                Password
+              </label>
+              <Link href="/auth/forgot-password" className="text-[8px] uppercase tracking-widest text-amber-900/60 hover:text-amber-950">Forgot Password?</Link>
+            </div>
             <input 
               required
               type="password" 
