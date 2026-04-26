@@ -108,18 +108,19 @@ export const CMS_DEFAULTS: Record<string, any[]> = {
       }
     }
   ],
-  "shipping-config": [
+  config: [
     {
-      section: "rules",
+      section: "shipping",
       content: {
-        baseCharge: 650,
-        freeShippingThreshold: 5000,
-        perItemSurcharge: 50,
-        categoryPremium: {
-          "Pottery": 100,
-          "Textiles": 0,
-          "Decor": 50
-        }
+        baseCharge: 500,
+        freeAbove: 25000,
+        perItemSurcharge: 50
+      }
+    },
+    {
+      section: "shipping-categories",
+      content: {
+        categories: []
       }
     }
   ]

@@ -7,14 +7,15 @@ import {
   Plus, Edit2, Trash2, Package, Search, X, Save, 
   Image as ImageIcon, LayoutDashboard, ShoppingBag, 
   Users, Settings, LogOut, ChevronRight, Filter,
-  TrendingUp, DollarSign, Clock, CheckCircle2, AlertCircle, Menu, Eye, Truck
+  TrendingUp, DollarSign, Clock, CheckCircle2, AlertCircle, Menu, Eye, Truck, Mail
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { getPlaceholderImage } from "@/lib/images";
+import { EMAIL_TEMPLATES } from "@/lib/email";
 
-type Section = "dashboard" | "orders" | "inventory" | "categories" | "cms" | "shipping" | "messages";
+type Section = "dashboard" | "orders" | "inventory" | "categories" | "cms" | "shipping" | "messages" | "emails";
 
 export default function MerchantDashboard() {
   const { data: session, status } = useSession();
@@ -24,6 +25,7 @@ export default function MerchantDashboard() {
   const [categories, setCategories] = useState<any[]>([]);
   const [cmsContent, setCmsContent] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
   const [selectedCmsPage, setSelectedCmsPage] = useState("home");
   const [isCmsModalOpen, setIsCmsModalOpen] = useState(false);
   const [cmsFormData, setCmsFormData] = useState({ 
@@ -43,6 +45,13 @@ export default function MerchantDashboard() {
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (activeSection === "emails") {
+      const logs = JSON.parse(localStorage.getItem("sru_email_logs") || "[]");
+      setEmailLogs(logs);
+    }
+  }, [activeSection]);
   
   // Robust fetch with automatic retry for unstable connections
   const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3, backoff = 500): Promise<Response> => {
@@ -637,6 +646,12 @@ export default function MerchantDashboard() {
                 active={activeSection === "messages"} 
                 onClick={() => { setActiveSection("messages"); setIsSidebarOpen(false); }} 
               />
+              <SidebarLink 
+                icon={<Mail size={18} />} 
+                label="Email Logic" 
+                active={activeSection === "emails"} 
+                onClick={() => { setActiveSection("emails"); setIsSidebarOpen(false); }} 
+              />
             </>
           )}
         </nav>
@@ -953,6 +968,7 @@ export default function MerchantDashboard() {
                     <option value="about">About Page</option>
                     <option value="contact">Contact Page</option>
                     <option value="privacy">Privacy Policy</option>
+                    <option value="terms">Terms of Service</option>
                     <option value="return-policy">Return Policy</option>
                     <option value="shipping">Shipping Policy</option>
                   </select>
@@ -987,8 +1003,13 @@ export default function MerchantDashboard() {
                   />
                 ))}
                 {cmsContent.filter(c => c.page === selectedCmsPage).length === 0 && (
-                  <div className="col-span-full py-20 text-center bg-amber-50/30 border border-dashed border-amber-900/10">
-                    <p className="text-[10px] uppercase tracking-widest text-amber-900/40">No sections found for this page. Add one to get started.</p>
+                  <div className="col-span-full py-20 text-center bg-amber-50/30 border border-dashed border-amber-900/10 space-y-4">
+                    <p className="text-[10px] uppercase tracking-widest text-amber-900/40">No sections found for this page.</p>
+                    <p className="text-xs text-amber-900/60 max-w-xs mx-auto">
+                      Use the "Add Section" button to create content. 
+                      {selectedCmsPage === "terms" && " (Suggested section ID: 'main' with 'title', 'intro', and 'sections' list)"}
+                      {selectedCmsPage === "return-policy" && " (Suggested section ID: 'policy' with 'title' and 'content')"}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1004,8 +1025,8 @@ export default function MerchantDashboard() {
               className="space-y-12"
             >
               <div>
-                <h1 className="font-serif text-4xl text-amber-950 mb-2">Shipping & Handling</h1>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Configure your global shipping rules and category modifiers.</p>
+                <h1 className="font-serif text-4xl text-amber-950 mb-2">Shipping Configuration</h1>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Set a flat shipping rate for all heritage items.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-12">
@@ -1013,21 +1034,19 @@ export default function MerchantDashboard() {
                   title="Global Shipping Rules" 
                   page="config" 
                   section="shipping" 
-                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping")?.content || { baseCharge: 500, perItemSurcharge: 50, freeAbove: 25000 }}
+                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping")?.content || { baseCharge: 500, perItemSurcharge: 0 }}
                   onSave={fetchData}
                   products={products}
                   categories={categories}
                 />
                 
-                <CMSSectionEditor 
-                  title="Category Modifiers" 
-                  page="config" 
-                  section="shipping-categories" 
-                  initialContent={cmsContent.find(c => c.page === "config" && c.section === "shipping-categories")?.content || { categories: [] }}
-                  onSave={fetchData}
-                  products={products}
-                  categories={categories}
-                />
+                <div className="bg-amber-50/50 p-8 border border-dashed border-amber-900/10">
+                  <p className="text-[10px] uppercase tracking-widest text-amber-950/40 font-bold mb-2">Note on Shipping</p>
+                  <p className="text-xs text-amber-900/60 leading-relaxed">
+                    Category-based shipping premiums have been disabled as per recent refinements. 
+                    The 'Free Above' threshold has also been removed to maintain uniform shipping standards across all heritage treasures.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -1080,6 +1099,60 @@ export default function MerchantDashboard() {
               </div>
             </motion.div>
           )}
+
+          {activeSection === "emails" && (
+            <motion.div 
+              key="emails"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-12"
+            >
+              <div>
+                <h1 className="font-serif text-4xl text-amber-950 mb-2">Email Control Center</h1>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-amber-900/40">Manage automated communications and view dispatch logs.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <h3 className="font-serif text-xl text-amber-950 uppercase tracking-tight">Active Templates</h3>
+                  <div className="flex flex-col gap-8">
+                    <EmailTemplateEditor 
+                      type="order-confirmation" 
+                      title="Order Confirmation"
+                      initialSubject="Your Heritage Selection is Confirmed"
+                      initialBody={EMAIL_TEMPLATES.orderConfirmation("ORDER-123", 5000).html}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="font-serif text-xl text-amber-950 uppercase tracking-tight">Dispatch Logs</h3>
+                  <div className="bg-white border border-amber-900/10 overflow-hidden">
+                    <div className="divide-y divide-amber-900/5">
+                      {emailLogs.length === 0 && (
+                        <div className="p-12 text-center text-[10px] uppercase tracking-widest text-amber-900/40">
+                          No emails dispatched yet.
+                        </div>
+                      )}
+                      {emailLogs.map((log) => (
+                        <div key={log.id} className="p-6 flex justify-between items-center hover:bg-amber-50 transition-colors">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] uppercase tracking-widest font-bold text-amber-950">{log.type}</span>
+                            <span className="text-sm font-medium text-amber-900">{log.to}</span>
+                            <span className="text-[10px] text-amber-900/40">{log.subject}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[8px] uppercase tracking-widest text-amber-900/40">{new Date(log.sentAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}                  
         </AnimatePresence>
       </main>
 
@@ -1908,6 +1981,65 @@ function CMSSectionEditor({ title, page, section, initialContent, initialDisplay
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function EmailTemplateEditor({ type, title, initialSubject, initialBody }: { type: string, title: string, initialSubject: string, initialBody: string }) {
+  const [subject, setSubject] = useState(initialSubject);
+  const [body, setBody] = useState(initialBody);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/email-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, subject, body }),
+      });
+      if (response.ok) {
+        toast.success(`${title} template updated`);
+      } else {
+        toast.error("Failed to update template");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-amber-900/10 p-8 space-y-6">
+      <h3 className="font-serif text-xl text-amber-950 uppercase tracking-tight">{title}</h3>
+      
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Subject Line</label>
+        <input 
+          type="text" 
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950 text-sm"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Template Content (HTML supported)</label>
+        <textarea 
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          className="w-full bg-amber-50/50 border border-amber-900/5 p-4 text-xs font-mono text-amber-950 focus:outline-none focus:border-amber-900/20 resize-none h-48"
+        />
+      </div>
+
+      <button 
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full py-4 bg-amber-950 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-amber-900 transition-all disabled:opacity-50"
+      >
+        {saving ? "Updating..." : "Update Template"}
+      </button>
     </div>
   );
 }

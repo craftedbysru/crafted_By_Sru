@@ -9,9 +9,39 @@ import CheckoutButton from "@/components/CheckoutButton";
 import { getPlaceholderImage } from "@/lib/images";
 import { useCMS } from "@/hooks/useCMS";
 
+import Image from "next/image";
+
 export default function CartPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { getSection, content: cmsContent } = useCMS("config");
+  const shippingRules = getSection("shipping", {
+    baseCharge: 500,
+    freeAbove: 25000,
+    perItemSurcharge: 50
+  });
+
+  const categoryModifiers = getSection("shipping-categories", { categories: [] }).categories || [];
+
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const calculateShipping = () => {
+    if (cart.length === 0) return 0;
+    
+    let totalShipping = Number(shippingRules.baseCharge) || 0;
+    
+    // per item surcharge
+    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+    totalShipping += totalItems * (Number(shippingRules.perItemSurcharge) || 0);
+    
+    // User requested to remove category modifiers for shipping
+    
+    return totalShipping;
+  };
+
+  const shipping = calculateShipping();
+  const total = subtotal + shipping;
 
   useEffect(() => {
     // Reset cart on first access to clear any potential ghost data from previous versions
@@ -37,7 +67,7 @@ export default function CartPage() {
       if (item.id === id) {
         const newQty = Math.max(25, item.quantity + delta);
         if (newQty > (item.stock || 999)) {
-          toast.error(`Only ${item.stock} items available in stock.`);
+          toast.error(`Requested quantity exceeds available stock.`);
           return item;
         }
         return { ...item, quantity: newQty };
@@ -55,19 +85,6 @@ export default function CartPage() {
     localStorage.setItem("sru_cart", JSON.stringify(newCart));
     window.dispatchEvent(new Event("sru_cart_change"));
   };
-
-  const { getSection } = useCMS("config");
-  const shippingRules = getSection("shipping", {
-    baseCharge: 500,
-    freeAbove: 25000,
-    perItemSurcharge: 50
-  });
-
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const baseCharge = Number(shippingRules.baseCharge) || 0;
-  const freeAbove = Number(shippingRules.freeAbove) || 0;
-  const shipping = (subtotal >= freeAbove && subtotal > 0) ? 0 : (subtotal > 0 ? baseCharge : 0);
-  const total = subtotal + shipping;
 
   if (loading) {
     return (
@@ -110,11 +127,13 @@ export default function CartPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="flex gap-6 pb-8 border-b border-amber-900/10"
               >
-                <Link href={`/product/${item.id}`} className="w-24 h-32 bg-amber-50 overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity">
-                  <img 
+                <Link href={`/product/${item.id}`} className="w-24 h-32 bg-amber-50 overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity relative">
+                  <Image 
                     src={item.imageUrl || item.image || getPlaceholderImage(item.category)} 
                     alt={item.name} 
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="96px"
+                    className="object-cover"
                     referrerPolicy="no-referrer"
                   />
                 </Link>
@@ -166,7 +185,7 @@ export default function CartPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-amber-900/60">Shipping</span>
-              <span className="text-amber-950">{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
+              <span className="text-amber-950">₹{shipping.toFixed(2)}</span>
             </div>
             <div className="h-px bg-amber-900/10 w-full my-2"></div>
             <div className="flex justify-between text-lg font-medium">
@@ -175,16 +194,34 @@ export default function CartPage() {
             </div>
           </div>
 
-          <Link
-            href="/checkout"
-            className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all flex items-center justify-center gap-3"
-          >
-            Proceed to Checkout
-            <ArrowRight size={16} />
-          </Link>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-900/10 p-6 space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-950">Online Orders Coming Soon</p>
+              <p className="text-xs text-amber-900/60 leading-relaxed italic">
+                Our online ordering system is currently under development to ensure a seamless heritage experience. 
+              </p>
+              <div className="h-px bg-amber-900/10 w-full my-1" />
+              <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-amber-900/40">To Place Your Order:</p>
+              <Link 
+                href={`https://wa.me/919342646579?text=Hello! I'd like to place an order for the following items from my cart: ${cart.map(i => `${i.name} (Qty: ${i.quantity})`).join(', ')}`}
+                target="_blank"
+                className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-950 border-b border-amber-950 hover:text-amber-700 transition-colors py-1"
+              >
+                Order via WhatsApp
+              </Link>
+            </div>
+
+            <button
+              disabled
+              className="w-full py-5 bg-amber-950/20 text-white/50 text-[10px] uppercase tracking-[0.3em] font-bold cursor-not-allowed flex items-center justify-center gap-3 backdrop-blur-sm shadow-inner"
+            >
+              Checkout Restricted
+              <ArrowRight size={16} />
+            </button>
+          </div>
 
           <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">
-            Secure payment powered by Razorpay
+            Secure checkout & Razorpay integration coming soon
           </p>
         </div>
       </div>

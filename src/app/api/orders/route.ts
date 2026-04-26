@@ -9,10 +9,29 @@ const orderStatusSchema = z.object({
 });
 
 export async function GET(req: Request) {
-  const session = await auth();
   const { searchParams } = new URL(req.url);
   const customerUid = searchParams.get("customerUid");
+  const orderId = searchParams.get("id");
 
+  // Public Order Tracking (No session required if ID is provided)
+  if (orderId) {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: {
+            select: { name: true, email: true },
+          }
+        },
+      });
+      if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json(order);
+    } catch (error) {
+      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+  }
+
+  const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

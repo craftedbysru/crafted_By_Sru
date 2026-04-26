@@ -10,6 +10,8 @@ import { getPlaceholderImage } from "@/lib/images";
 
 import { useCMS } from "@/hooks/useCMS";
 
+import Image from "next/image";
+
 export default function ProductDetail() {
   const params = useParams();
   const router = useRouter();
@@ -19,7 +21,7 @@ export default function ProductDetail() {
   const [isAdded, setIsAdded] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
-  const { getSection: getContactCMS } = useCMS("contact");
+  const { getSection: getContactCMS } = useCMS("config");
   const contactInfo = getContactCMS("details", {
     email: "concierge@craftedbysru.com",
     phone: "+91 98765 43210"
@@ -70,7 +72,7 @@ export default function ProductDetail() {
     const currentInCart = existing ? existing.quantity : 0;
     
     if (currentInCart + quantity > product.stock) {
-      toast.error(`Only ${product.stock} items available in stock. You already have ${currentInCart} in your cart.`);
+      toast.error(`Requested quantity exceeds available stock.`);
       return;
     }
 
@@ -91,7 +93,7 @@ export default function ProductDetail() {
     if (quantity < product.stock) {
       setQuantity(prev => prev + 1);
     } else {
-      toast.warning(`Only ${product.stock} items available in stock`);
+      toast.warning(`Maximum available stock reached`);
     }
   };
   const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 1 : 25));
@@ -129,21 +131,28 @@ export default function ProductDetail() {
           <div className="flex flex-col gap-4">
             <div className="aspect-[4/5] bg-amber-50 overflow-hidden relative group">
               <AnimatePresence mode="wait">
-                <motion.img 
+                <motion.div
                   key={activeImageIdx}
-                  src={productImages[activeImageIdx]} 
+                  className="w-full h-full relative"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.5 }}
-                  alt={product.name} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                >
+                  <Image 
+                    src={productImages[activeImageIdx]} 
+                    alt={product.name} 
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </motion.div>
               </AnimatePresence>
               
               {productImages.length > 1 && (
-                <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button 
                     onClick={() => setActiveImageIdx(prev => (prev === 0 ? productImages.length - 1 : prev - 1))}
                     className="p-2 bg-white/80 backdrop-blur-sm rounded-full text-amber-950 hover:bg-white transition-all shadow-sm"
@@ -170,7 +179,14 @@ export default function ProductDetail() {
                       activeImageIdx === idx ? "border-amber-900 scale-95" : "border-transparent"
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <Image 
+                      src={img} 
+                      alt="" 
+                      fill
+                      sizes="80px"
+                      className="object-cover" 
+                      referrerPolicy="no-referrer" 
+                    />
                   </button>
                 ))}
               </div>
@@ -195,11 +211,15 @@ export default function ProductDetail() {
           animate={{ opacity: 1, x: 0 }}
           className="flex flex-col gap-8"
         >
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.4em] text-amber-700 mb-4">{product.category}</p>
-            <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-4">{product.name}</h1>
-            <p className="text-2xl font-light text-amber-950">₹{product.price}</p>
-            <p className="text-[10px] text-amber-900/50 mt-1 uppercase tracking-widest">Taxes included. Shipping calculated at checkout</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.4em] text-amber-700">{product.category}</p>
+              <h1 className="font-serif text-5xl md:text-7xl text-amber-950 leading-tight">{product.name}</h1>
+            </div>
+            <div className="text-left md:text-right">
+              <p className="text-4xl font-light text-amber-950">₹{product.price.toLocaleString()}</p>
+              <p className="text-[10px] text-amber-900/50 mt-1 uppercase tracking-widest">Taxes included. Shipping calculated at checkout</p>
+            </div>
           </div>
 
           <div className="h-px bg-amber-900/10 w-full"></div>
@@ -228,7 +248,6 @@ export default function ProductDetail() {
                         +
                       </button>
                     </div>
-                    <span className="text-[10px] uppercase tracking-widest opacity-40 text-amber-900">{product.stock} available</span>
                   </div>
 
                   <button 
@@ -255,13 +274,25 @@ export default function ProductDetail() {
                   Out of Stock
                 </div>
               )}
+              
+              <a 
+                href={`https://wa.me/919342646579?text=Hi, I'm interested in the ${product.name} (${product.id}). Can you provide more details?`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-5 border border-green-600/20 bg-green-50/30 text-green-800 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-3"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.29-4.143c1.589.943 3.129 1.417 4.77 1.417 5.4 0 9.791-4.39 9.791-9.79.002-5.402-4.386-9.79-9.788-9.79-5.402 0-9.791 4.39-9.791 9.79 0 1.767.487 3.393 1.411 4.793l-1.032 3.766 3.86-1.011zm11.758-7.306c-.32-.16-1.89-.932-2.181-1.038-.29-.107-.502-.16-.712.16-.21.32-.811 1.038-.992 1.24-.182.201-.363.227-.683.067-.32-.16-1.353-.499-2.577-1.59-.953-.848-1.596-1.895-1.784-2.215-.188-.32-.02-.492.14-.652.144-.143.32-.373.48-.56.16-.188.214-.32.32-.534.107-.213.053-.4-.027-.56-.08-.16-.712-1.713-.976-2.353-.257-.622-.518-.538-.712-.548-.182-.008-.39-.011-.598-.011-.208 0-.547.077-.833.395-.286.318-1.092 1.068-1.092 2.606 0 1.538 1.118 3.023 1.272 3.235.154.212 2.2 3.359 5.33 4.716.745.322 1.327.515 1.78.658.748.236 1.428.203 1.967.122.6-.091 1.89-.773 2.156-1.48.267-.707.267-1.313.187-1.44-.08-.127-.291-.203-.611-.363z"/>
+                </svg>
+                Chat with Merchant
+              </a>
+
               <div className="bg-amber-50 p-6 border border-amber-900/5">
                 <p className="text-[10px] uppercase tracking-widest text-center text-amber-900 font-bold mb-2">Bulk Orders</p>
                 <p className="text-xs text-center text-amber-900/60 leading-relaxed">
                   For bulk orders and personalized gifting, please reach out to us at <span className="text-amber-950 font-bold">{contactInfo.phone}</span> or email us at <span className="text-amber-950 font-bold">{contactInfo.email}</span>
                 </p>
               </div>
-              <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">Free shipping on orders over ₹15,000</p>
             </div>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">

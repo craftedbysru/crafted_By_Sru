@@ -18,9 +18,9 @@ export default function AboutPage() {
   const missionContent = getSection("mission", {
     title: "Our Mission",
     items: [
-      { title: "Ethical Sourcing", content: "We ensure fair wages and safe working conditions for all our heritage partners." },
-      { title: "Preserving Heritage", content: "We help keep ancient traditions alive for future generations." },
-      { title: "Modern Design", content: "We adapt traditional crafts for the modern aesthetic without losing their soul." }
+      { title: "Original Heritage", content: "We meticulously source return gifts that are rooted in genuine Indian traditions, ensuring every piece is an original masterpiece of heritage." },
+      { title: "Authentic Artistry", content: "By working directly with master artisans, we preserve the purity and authenticity of traditional techniques in every selection." },
+      { title: "Distinctive Gifting", content: "Our curation focuses on originality, offering unique and meaningful gifts that leave a lasting impression of culture and care." }
     ]
   });
 

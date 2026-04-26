@@ -185,59 +185,80 @@ export const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-white flex flex-col"
+            className="fixed inset-0 z-[100] bg-amber-950/20 backdrop-blur-md flex flex-col"
           >
-            <div className="px-6 py-8 flex justify-between items-center border-b border-amber-900/5">
-              <span className="font-serif italic text-2xl tracking-tighter text-amber-950">Search</span>
-              <button onClick={() => setIsSearchOpen(false)} className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-6 py-12">
-              <div className="max-w-3xl mx-auto">
-                <div className="flex items-center gap-4 mb-12">
-                  <input 
-                    autoFocus
-                    type="text" 
-                    placeholder="What are you looking for?"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 text-4xl md:text-6xl font-serif text-amber-950 placeholder:text-amber-950/10 border-none focus:ring-0 bg-transparent outline-none"
-                  />
-                  <button className="px-8 py-4 bg-amber-900 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-amber-800 transition-all">
-                    Search
+            <motion.div 
+              initial={{ y: -50 }}
+              animate={{ y: 0 }}
+              exit={{ y: -50 }}
+              className="bg-white px-6 py-8 shadow-2xl"
+            >
+              <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                  <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-950/40">Search Catalog</span>
+                  <button onClick={() => setIsSearchOpen(false)} className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
+                    <X size={20} />
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {searchResults.map((product) => (
-                    <Link key={product.id} href={`/product/${product.id}`} className="flex gap-4 group">
-                      <div className="w-20 h-24 overflow-hidden bg-amber-50">
-                        <img 
-                          src={product.imageUrl || (Array.isArray(product.images) && product.images[0]) || product.image || "https://picsum.photos/seed/product/200/200"} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                          referrerPolicy="no-referrer" 
-                        />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest opacity-50 text-amber-900">{product.category}</p>
-                        <h4 className="text-sm font-medium text-amber-950 group-hover:underline">{product.name}</h4>
-                        <p className="text-sm text-amber-900/70 mt-1">₹{product.price}</p>
-                      </div>
-                    </Link>
-                  ))}
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30" size={18} />
+                    <input 
+                      autoFocus
+                      type="text" 
+                      placeholder="Search for heritage gifts, artisan crafts..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full text-sm font-medium text-amber-950 placeholder:text-amber-950/20 border border-amber-900/10 bg-amber-50/50 px-12 py-4 outline-none focus:border-amber-900/30 focus:bg-amber-50 transition-all shadow-inner"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+                  <AnimatePresence mode="popLayout">
+                    {searchResults.map((product) => (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                      >
+                        <Link href={`/product/${product.id}`} className="flex flex-col gap-4 group bg-white border border-amber-900/5 p-4 hover:shadow-xl transition-all">
+                          <div className="aspect-square overflow-hidden bg-amber-50 relative">
+                            <img 
+                              src={product.imageUrl || (Array.isArray(product.images) && product.images[0]) || product.image || "https://picsum.photos/seed/product/200/200"} 
+                              alt={product.name} 
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                              referrerPolicy="no-referrer" 
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase tracking-widest opacity-40 text-amber-900 font-bold">{product.category}</p>
+                            <h4 className="text-sm font-serif text-amber-950 group-hover:text-amber-800 transition-colors truncate">{product.name}</h4>
+                            <p className="text-sm text-amber-950 font-medium mt-1">₹{product.price.toLocaleString()}</p>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  
                   {searchQuery.length > 1 && searchResults.length === 0 && (
-                    <p className="text-sm text-amber-900/40 italic">No results found for "{searchQuery}"</p>
+                    <div className="col-span-full py-20 text-center">
+                      <p className="text-amber-900/40 italic font-serif text-xl">No results found for "{searchQuery}"</p>
+                      <p className="text-[10px] uppercase tracking-widest text-amber-900/20 mt-2">Try searching for keywords like 'Heritage', 'Gifts', or categories.</p>
+                    </div>
                   )}
+                  
                   {searchQuery.length > 1 && searchResults.length > 0 && (
-                    <Link href={`/catalog?search=${encodeURIComponent(searchQuery)}`} className="col-span-full text-center py-4 text-[10px] uppercase tracking-widest font-bold text-amber-900 border-t border-amber-900/5 hover:bg-amber-50 rounded-lg mt-4">
-                      View all {searchResults.length} results in Catalog
+                    <Link href={`/catalog?search=${encodeURIComponent(searchQuery)}`} className="col-span-full text-center py-6 text-[10px] uppercase tracking-widest font-black text-amber-950 border-t border-amber-900/5 hover:bg-amber-50 transition-colors mt-4">
+                      Explore All {searchResults.length > 5 ? 'Matches' : 'Results'} in Full Catalog
                     </Link>
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
+            <div className="flex-1 cursor-pointer" onClick={() => setIsSearchOpen(false)} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { verifyRazorpaySignature } from "@/lib/payment-utils";
 import { getRazorpay } from "@/lib/razorpay";
 import { z } from "zod";
+import { sendEmail, getOrderConfirmationTemplate } from "@/lib/email";
 
 const verifyPaymentSchema = z.object({
   razorpay_order_id: z.string().min(1),
@@ -141,6 +142,20 @@ export async function POST(request: Request) {
 
         return order;
       });
+
+      // 5. Send confirmation email (outside transaction)
+      try {
+        const emailContent = getOrderConfirmationTemplate(result.id, result.total);
+        await sendEmail({
+          to: orderData.shippingAddress.email || session.user?.email || "",
+          subject: "Your Heritage Selection is Confirmed",
+          html: emailContent,
+          type: "ORDER_CONFIRMATION"
+        });
+      } catch (err) {
+        console.error("Failed to send confirmation email:", err);
+        // Don't fail the order if email fails
+      }
 
       return NextResponse.json({ success: true, orderId: result.id });
     } else {

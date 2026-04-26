@@ -21,9 +21,11 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     street: "",
     street2: "",
     city: "",
+    state: "",
     postalCode: "",
     country: "India",
     phone: ""
@@ -66,15 +68,21 @@ export default function CheckoutPage() {
             setAddress({
               firstName: profile.name?.split(" ")[0] || "",
               lastName: profile.name?.split(" ").slice(1).join(" ") || "",
+              email: profile.email || session?.user?.email || "",
               street: addr.street || "",
               street2: addr.street2 || "",
               city: addr.city || "",
+              state: addr.state || "",
               postalCode: addr.zipCode || "",
               country: addr.country || "India",
               phone: profile.phone || ""
             });
-          } else if (profile.phone) {
-            setAddress(prev => ({ ...prev, phone: profile.phone }));
+          } else {
+            setAddress(prev => ({ 
+              ...prev, 
+              phone: profile.phone || "",
+              email: profile.email || session?.user?.email || ""
+            }));
           }
         }
       } catch (err) {
@@ -88,23 +96,14 @@ export default function CheckoutPage() {
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   
-  // Dynamic Shipping Calculation based on CMS rules
   const calculateShipping = () => {
-    if (subtotal >= (Number(shippingRules.freeAbove) || 25000)) return 0;
-    
     let totalShipping = Number(shippingRules.baseCharge) || 0;
     
     // per item surcharge
     const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
     totalShipping += totalItems * (Number(shippingRules.perItemSurcharge) || 0);
     
-    // category premiums
-    cart.forEach(item => {
-      const modifier = categoryModifiers.find((m: any) => m.id === item.categoryId || m.name === item.category);
-      if (modifier && modifier.premium) {
-        totalShipping += Number(modifier.premium) * item.quantity;
-      }
-    });
+    // User requested to remove category modifiers
     
     return totalShipping;
   };
@@ -129,7 +128,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-7 space-y-12">
             <header>
               <Link href="/cart" className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-amber-900/40 hover:text-amber-950 transition-colors mb-8">
-                <ArrowLeft size={14} /> Back to Catalog
+                <ArrowLeft size={14} /> Back to Cart
               </Link>
               <h1 className="font-serif text-5xl md:text-7xl text-amber-950 mb-4">Finishing Your Selection</h1>
               <p className="text-amber-900/60 max-w-md">Each piece is handcrafted and packed with care. Please provide your details to ensure a seamless arrival of your heritage treasures.</p>
@@ -141,8 +140,8 @@ export default function CheckoutPage() {
                   <span className="text-[10px] font-bold uppercase tracking-widest">01 Shipping</span>
                 </div>
                 <div className="w-12 h-px bg-amber-950/10" />
-                <div className={`flex items-center gap-3 ${step >= 3 ? 'text-amber-950' : 'text-amber-900/30'}`}>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">03 Payment</span>
+                <div className={`flex items-center gap-3 ${step >= 2 ? 'text-amber-950' : 'text-amber-900/30'}`}>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">02 Payment</span>
                 </div>
               </div>
 
@@ -200,12 +199,12 @@ export default function CheckoutPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">City</label>
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Email Address (For Confirmation)</label>
                     <input 
-                      type="text" 
-                      placeholder="Jaipur"
-                      value={address.city}
-                      onChange={(e) => setAddress({...address, city: e.target.value})}
+                      type="email" 
+                      placeholder="ananya@example.com"
+                      value={address.email}
+                      onChange={(e) => setAddress({...address, email: e.target.value})}
                       className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
                     />
                   </div>
@@ -233,25 +232,45 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Country</label>
-                    <select 
-                      value={address.country}
-                      onChange={(e) => setAddress({...address, country: e.target.value})}
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">City</label>
+                    <input 
+                      type="text" 
+                      placeholder="Jaipur"
+                      value={address.city}
+                      onChange={(e) => setAddress({...address, city: e.target.value})}
                       className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
-                    >
-                      <option value="India">India</option>
-                      <option value="USA">USA</option>
-                      <option value="UK">UK</option>
-                    </select>
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">State</label>
+                    <input 
+                      type="text" 
+                      placeholder="Rajasthan"
+                      value={address.state}
+                      onChange={(e) => setAddress({...address, state: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-950/20 py-3 focus:outline-none focus:border-amber-950 transition-colors text-amber-950"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Country</label>
+                    <input 
+                      type="text" 
+                      value={address.country}
+                      readOnly
+                      className="w-full bg-transparent border-b border-amber-950/10 py-3 text-amber-900/40 cursor-not-allowed outline-none"
+                    />
                   </div>
                 </div>
 
                   <button 
                     onClick={() => {
-                      if (!address.firstName || !address.lastName || !address.street || !address.city || !address.postalCode || !address.phone) {
-                        toast.error("Please fill in all shipping details and mobile number");
-                        return;
-                      }
+                    if (!address.firstName || !address.lastName || !address.street || !address.city || !address.state || !address.postalCode || !address.phone) {
+                      toast.error("Please fill in all shipping details and mobile number");
+                      return;
+                    }
                       setStep(3); // Skip step 2
                     }}
                     className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all shadow-lg"
@@ -364,7 +383,7 @@ export default function CheckoutPage() {
                     onSuccess={(orderId) => {
                       localStorage.removeItem("sru_cart");
                       window.dispatchEvent(new Event("sru_cart_change"));
-                      router.push(`/orders/${orderId}`);
+                      router.push(`/orders/tracking?id=${orderId}`);
                     }}
                     className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all"
                   >
