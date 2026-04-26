@@ -28,6 +28,8 @@ model User {
   isImmutable   Boolean   @default(false)      // Prevents deletion/edit for master merchant
   merchantPin   String?   // Extra layer of auth for merchant (hashed)
   cart          Json?     // Persistent cart data
+  resetToken         String?
+  resetTokenExpires  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
@@ -86,6 +88,7 @@ model Address {
 model Category {
   id        String    @id @default(uuid())
   name      String    @unique
+  imageUrl  String?   @map("image_url") @db.Text
   products  Product[]
   createdAt DateTime  @default(now())
 }
@@ -117,7 +120,17 @@ model Product {
   featured    Boolean  @default(false)
   isBestSeller Boolean @default(false)
   productData String?  @db.Text
+  rating      Float    @default(4.8)
+  salesCount  Int      @default(0)
   createdAt   DateTime @default(now())
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  type      String   @unique // signup, order-confirmation, password-reset
+  subject   String
+  body      String   @db.Text
+  updatedAt DateTime @updatedAt
 }
 
 model Order {

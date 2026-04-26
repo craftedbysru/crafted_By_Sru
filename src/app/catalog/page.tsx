@@ -31,7 +31,19 @@ function CatalogContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [sortBy, setSortBy] = useState(initialSort);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialSort) {
+      setSortBy(initialSort);
+    }
+  }, [initialSort]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -130,7 +142,7 @@ function CatalogContent() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="max-w-2xl">
             <h1 className="font-serif text-6xl md:text-7xl text-amber-950 mb-6 leading-[0.9]">
-              Heritage <br />
+              Gifted <br />
               <span className="italic text-amber-800/80">Collection</span>
             </h1>
             <p className="text-amber-900/60 text-sm tracking-wide leading-relaxed max-w-md">
@@ -205,15 +217,15 @@ function CatalogContent() {
                        <input 
                         type="range" 
                         min="0" 
-                        max="100000" 
-                        step="500"
+                        max="5000" 
+                        step="100"
                         value={priceRange[1]} 
                         onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                         className="w-full accent-amber-950" 
                       />
                       <div className="flex justify-between text-[8px] uppercase tracking-widest font-bold text-amber-900/40">
                         <span>Min: ₹0</span>
-                        <span>Max: ₹100,000+</span>
+                        <span>Max: ₹5,000+</span>
                       </div>
                     </div>
                   </div>
@@ -221,7 +233,7 @@ function CatalogContent() {
                   <div className="flex items-end justify-end pb-1">
                     <button 
                       onClick={() => {
-                        setPriceRange([0, 100000]);
+                        setPriceRange([0, 5000]);
                         setSelectedCategory("All");
                         setSearchQuery("");
                       }}
@@ -320,9 +332,9 @@ function CatalogContent() {
       <div className="mt-40 bg-amber-950/2 p-24 text-center border border-amber-900/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-100/30 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
         <div className="relative z-10">
-          <h2 className="font-serif text-5xl text-amber-950 mb-6">Bespoke Heritage Gifting</h2>
+          <h2 className="font-serif text-5xl text-amber-950 mb-6">Bespoke Gifted Gifting</h2>
           <p className="text-amber-900/60 text-lg max-w-xl mx-auto mb-12 leading-relaxed">
-            For weddings and corporate events, our concierge team offers personalized heritage storytelling and logistic orchestration.
+            For weddings and corporate events, our concierge team offers personalized storytelling and logistic orchestration.
           </p>
           <Link 
             href="/contact"

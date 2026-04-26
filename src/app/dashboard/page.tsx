@@ -39,6 +39,8 @@ export default function MerchantDashboard() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [categoryImageUrl, setCategoryImageUrl] = useState("");
+  const [isCategoryUploading, setIsCategoryUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPinVerified, setIsPinVerified] = useState(false);
@@ -97,8 +99,9 @@ export default function MerchantDashboard() {
   const [uploading, setUploading] = useState(false);
 
   // Background upload helper
-  const startBackgroundUpload = async (file: File, type: "image" | "video", index?: number) => {
+  const startBackgroundUpload = async (file: File, type: "image" | "video" | "category-image", index?: number) => {
     if (type === "video") setVideoUploadStatus("pending");
+    else if (type === "category-image") setIsCategoryUploading(true);
     else if (index !== undefined) {
       setImageList(prev => {
         const next = [...prev];
@@ -169,6 +172,10 @@ export default function MerchantDashboard() {
         setVideoUploadStatus("success");
         setFormData(prev => ({ ...prev, videoUrl: finalPublicUrl }));
         toast.success("Video uploaded successfully");
+      } else if (type === "category-image") {
+        setCategoryImageUrl(finalPublicUrl);
+        setIsCategoryUploading(false);
+        toast.success("Category image uploaded");
       } else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
@@ -182,6 +189,7 @@ export default function MerchantDashboard() {
       // Fallback to legacy POST if GET fails or for smaller files if necessary,
       // but usually signed URL is more robust for 10MB+
       if (type === "video") setVideoUploadStatus("failed");
+      else if (type === "category-image") setIsCategoryUploading(false);
       else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
@@ -191,6 +199,13 @@ export default function MerchantDashboard() {
       }
       toast.error(`Background ${type} upload failed (${err.message}).`);
       return null;
+    }
+  };
+
+  const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      startBackgroundUpload(file, "category-image");
     }
   };
 
@@ -459,13 +474,17 @@ export default function MerchantDashboard() {
       const response = await fetchWithRetry(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: categoryName }),
+        body: JSON.stringify({ 
+          name: categoryName,
+          imageUrl: categoryImageUrl || null
+        }),
       });
 
       if (response.ok) {
         toast.success(editingCategory ? "Category updated" : "Category added");
         setIsCategoryModalOpen(false);
         setCategoryName("");
+        setCategoryImageUrl("");
         setEditingCategory(null);
         fetchData();
       } else {
@@ -1578,15 +1597,57 @@ export default function MerchantDashboard() {
                 {editingCategory ? "Edit Category" : "Add New Category"}
               </h2>
               <form onSubmit={handleSaveCategory} className="space-y-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Name</label>
-                  <input 
-                    required
-                    type="text" 
-                    value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
-                    className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Image</label>
+                    <div className="flex flex-col gap-4">
+                      {categoryImageUrl && (
+                        <div className="aspect-video w-full bg-amber-50 border border-amber-900/10 overflow-hidden relative group">
+                          <img src={categoryImageUrl} alt="Category" className="w-full h-full object-cover" />
+                          <button 
+                            type="button"
+                            onClick={() => setCategoryImageUrl("")}
+                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-4">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          id="category-image-upload"
+                          onChange={handleCategoryImageUpload}
+                          className="hidden"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => document.getElementById('category-image-upload')?.click()}
+                          disabled={isCategoryUploading}
+                          className="flex-1 py-3 border border-dashed border-amber-900/20 text-[10px] uppercase tracking-widest font-bold text-amber-900/60 hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isCategoryUploading ? (
+                            <div className="w-3 h-3 border border-amber-950 border-t-transparent rounded-full animate-spin" />
+                          ) : <ImageIcon size={14} />}
+                          {categoryImageUrl ? "Change Image" : "Upload Image"}
+                        </button>
+                      </div>
+                      <p className="text-[8px] text-amber-900/30 uppercase tracking-[0.2em] text-center">Recommended: 800x1000px</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Name</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                    />
+                  </div>
                 </div>
                 <button 
                   type="submit"

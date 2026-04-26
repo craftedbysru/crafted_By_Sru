@@ -38,6 +38,7 @@ export const Footer = () => {
           <ul className="space-y-4 text-sm opacity-60 text-amber-50/80">
             <li><Link href="#" className="hover:text-white transition-colors">Instagram</Link></li>
             <li><a href="https://wa.me/919342646579" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp</a></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Pinterest</Link></li>
           </ul>
         </div>
       </div>
@@ -46,7 +47,6 @@ export const Footer = () => {
         <div className="flex gap-10">
           <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-          <Link href="/merchant-login" className="text-amber-200 font-bold opacity-100 hover:text-white transition-colors">Merchant Portal</Link>
         </div>
       </div>
     </footer>
