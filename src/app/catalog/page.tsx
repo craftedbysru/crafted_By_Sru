@@ -48,8 +48,7 @@ function CatalogContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchData = async (retries = 3) => {
       try {
         const cachedProducts = localStorage.getItem("sru_catalog_products");
         const cachedCategories = localStorage.getItem("sru_catalog_categories");
@@ -57,13 +56,14 @@ function CatalogContent() {
         if (cachedProducts && cachedCategories) {
           setProducts(JSON.parse(cachedProducts));
           setCategories(JSON.parse(cachedCategories));
-          setLoading(false);
-          // Continue to fetch in background to refresh cache
+          // We don't set loading to false here so that the background refresh 
+          // can complete and we ensure we have the latest data/state.
         }
 
-        console.log("Fetching catalog data");
-        const productsRes = await fetch("/api/inventory");
-        const categoriesRes = await fetch("/api/categories");
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch("/api/inventory"),
+          fetch("/api/categories")
+        ]);
 
         if (!productsRes.ok || !categoriesRes.ok) throw new Error("Connection failed");
 
@@ -78,10 +78,14 @@ function CatalogContent() {
         
         localStorage.setItem("sru_catalog_products", JSON.stringify(prodList));
         localStorage.setItem("sru_catalog_categories", JSON.stringify(catList));
-      } catch (error: any) {
-        toast.error("Failed to load collection");
-      } finally {
         setLoading(false);
+      } catch (error: any) {
+        if (retries > 0) {
+          setTimeout(() => fetchData(retries - 1), 1000);
+        } else {
+          toast.error("Failed to load collection");
+          setLoading(false);
+        }
       }
     };
 

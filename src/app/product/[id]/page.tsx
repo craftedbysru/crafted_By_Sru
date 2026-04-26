@@ -34,7 +34,7 @@ export default function ProductDetail() {
   ) : [];
 
   useEffect(() => {
-    const fetchProduct = async (retries = 3) => {
+    const fetchProduct = async (retries = 5) => {
       try {
         const response = await fetch(`/api/inventory/${params.id}`);
         if (response.ok) {
@@ -46,19 +46,29 @@ export default function ProductDetail() {
           if (cart.some((item: any) => item.id === data.id)) {
             setIsAdded(true);
           }
-        } else if (response.status === 500 && retries > 0) {
-           setTimeout(() => fetchProduct(retries - 1), 1000);
+          return;
+        } 
+        
+        if (retries > 0) {
+          const delay = 500 * Math.pow(2, 5 - retries);
+          setTimeout(() => fetchProduct(retries - 1), delay);
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error("Error fetching product:", error);
         if (retries > 0) {
-          setTimeout(() => fetchProduct(retries - 1), 1000);
+          const delay = 500 * Math.pow(2, 5 - retries);
+          setTimeout(() => fetchProduct(retries - 1), delay);
+        } else {
+          setLoading(false);
         }
-      } finally {
-        setLoading(false);
       }
     };
-    if (params.id) fetchProduct();
+    if (params.id) {
+      setLoading(true);
+      fetchProduct();
+    }
   }, [params.id]);
 
   const addToCart = () => {

@@ -36,9 +36,8 @@ export const Footer = () => {
         <div>
           <h4 className="text-[10px] uppercase tracking-[0.4em] mb-8 text-amber-200 font-bold">Social</h4>
           <ul className="space-y-4 text-sm opacity-60 text-amber-50/80">
-            <li><Link href="#" className="hover:text-white transition-colors">Instagram</Link></li>
+            <li><Link href="https://www.instagram.com/craftedbysru.in?igsh=MTNwNGJ3OXJ3ZGY3bQ==" className="hover:text-white transition-colors">Instagram</Link></li>
             <li><a href="https://wa.me/919342646579" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp</a></li>
-            <li><Link href="#" className="hover:text-white transition-colors">Pinterest</Link></li>
           </ul>
         </div>
       </div>
