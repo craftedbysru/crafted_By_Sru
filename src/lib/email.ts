@@ -1,13 +1,17 @@
-import { Resend } from "resend";
 
-let resendClient: Resend | null = null;
+let resendClient: any = null;
 
-function getResend() {
+async function getResend() {
   if (typeof window !== "undefined") return null;
   if (!resendClient) {
     const key = process.env.RESEND_API_KEY;
     if (key) {
-      resendClient = new Resend(key);
+      try {
+        const { Resend } = await import("resend");
+        resendClient = new Resend(key);
+      } catch (e) {
+        console.error("Could not load resend module", e);
+      }
     }
   }
   return resendClient;
@@ -40,7 +44,7 @@ export async function sendEmail({ to, subject, html, type }: { to: string, subje
   }
 
   // Real dispatch via Resend (Server side only)
-  const resend = getResend();
+  const resend = await getResend();
   if (resend) {
     try {
       const { data, error } = await resend.emails.send({

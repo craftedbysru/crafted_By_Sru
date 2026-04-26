@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { getPlaceholderImage } from "@/lib/images";
-import { EMAIL_TEMPLATES } from "@/lib/email";
+import { EMAIL_TEMPLATES } from "@/lib/email-templates";
 
 type Section = "dashboard" | "orders" | "inventory" | "categories" | "cms" | "shipping" | "messages" | "emails";
 
