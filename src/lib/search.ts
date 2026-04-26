@@ -1,5 +1,8 @@
 import Fuse from "fuse.js";
 
+/**
+ * Product search utility with typo tolerance
+ */
 export function searchProducts(products: any[], query: string) {
   if (!query) return products;
 
@@ -9,7 +12,7 @@ export function searchProducts(products: any[], query: string) {
       { name: "description", weight: 0.3 },
       { name: "category", weight: 0.2 }
     ],
-    threshold: 0.4, // Typo tolerance
+    threshold: 0.3, // Slightly stricter typo tolerance
     includeScore: true
   };
 
