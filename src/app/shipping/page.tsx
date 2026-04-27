@@ -1,13 +1,40 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { useCMS } from "@/hooks/useCMS";
 
 export default function ShippingPage() {
-  const { content: cmsContent, getSection, loading } = useCMS("shipping");
+  const [cmsContent, setCmsContent] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const mainContent = getSection("main", {
+  useEffect(() => {
+    const cacheKey = "sru_cms_cache_shipping";
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) setCmsContent(JSON.parse(cached));
+
+    const fetchContent = async () => {
+      try {
+        const res = await fetch("/api/content?page=shipping");
+        if (res.ok) {
+          const data = await res.json();
+          setCmsContent(data);
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        }
+      } catch (error) {
+        console.error("Error fetching shipping page content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
+
+  const getContent = (section: string, defaults: any) => {
+    const item = cmsContent.find(c => c.section === section);
+    return item ? { ...defaults, ...item.content } : defaults;
+  };
+
+  const mainContent = getContent("main", {
     title: "Shipping & Delivery",
     intro: "We deliver our handcrafted treasures worldwide with the utmost care.",
     details: "Standard shipping takes 10-15 business days across India. International orders may vary."
@@ -38,7 +65,7 @@ export default function ShippingPage() {
 
           {/* Dynamic CMS Sections for Shipping Page */}
           <div className="space-y-16">
-            {cmsContent.filter(c => !["main"].includes(c.section)).map((section) => (
+            {cmsContent.filter(c => !["main"].includes(c.section)).map((section, idx) => (
               <section key={section.id} className="pt-12 border-t border-amber-950/5">
                 {section.content.title && (
                   <h2 className="font-serif text-3xl text-amber-950 mb-6">{section.content.title}</h2>

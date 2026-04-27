@@ -1,9 +1,7 @@
 import Fuse from "fuse.js";
 
 /**
- * Product search utility with typo tolerance.
- * Note: If you encounter module not found for fuse.js in Vercel, 
- * ensure it's in transpilePackages in next.config.js.
+ * Product search utility with typo tolerance
  */
 export function searchProducts(products: any[], query: string) {
   if (!query) return products;

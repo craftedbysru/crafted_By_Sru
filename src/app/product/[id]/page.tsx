@@ -34,7 +34,7 @@ export default function ProductDetail() {
   ) : [];
 
   useEffect(() => {
-    const fetchProduct = async (retries = 5) => {
+    const fetchProduct = async (retries = 3) => {
       try {
         const response = await fetch(`/api/inventory/${params.id}`);
         if (response.ok) {
@@ -46,30 +46,19 @@ export default function ProductDetail() {
           if (cart.some((item: any) => item.id === data.id)) {
             setIsAdded(true);
           }
-          setLoading(false);
-          return;
-        } 
-        
-        if (retries > 0) {
-          const delay = 500 * Math.pow(2, 5 - retries);
-          setTimeout(() => fetchProduct(retries - 1), delay);
-        } else {
-          setLoading(false);
+        } else if (response.status === 500 && retries > 0) {
+           setTimeout(() => fetchProduct(retries - 1), 1000);
         }
       } catch (error) {
         console.error("Error fetching product:", error);
         if (retries > 0) {
-          const delay = 500 * Math.pow(2, 5 - retries);
-          setTimeout(() => fetchProduct(retries - 1), delay);
-        } else {
-          setLoading(false);
+          setTimeout(() => fetchProduct(retries - 1), 1000);
         }
+      } finally {
+        setLoading(false);
       }
     };
-    if (params.id) {
-      setLoading(true);
-      fetchProduct();
-    }
+    if (params.id) fetchProduct();
   }, [params.id]);
 
   const addToCart = () => {
@@ -100,14 +89,14 @@ export default function ProductDetail() {
     toast.success(`${product.name} added to cart`);
   };
 
-  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 25 : 25));
   const incrementQty = () => {
-    if (quantity + 25 <= product.stock) {
-      setQuantity(prev => prev + 25);
+    if (quantity < product.stock) {
+      setQuantity(prev => prev + 1);
     } else {
       toast.warning(`Maximum available stock reached`);
     }
   };
+  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 1 : 25));
 
   if (loading) {
     return (
@@ -287,7 +276,7 @@ export default function ProductDetail() {
               )}
               
               <a 
-                href={`https://wa.me/919342646579?text=Hi, I'm interested in the ${product.name}. Can you provide more details?`}
+                href={`https://wa.me/919342646579?text=Hi, I'm interested in the ${product.name} (${product.id}). Can you provide more details?`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-5 border border-green-600/20 bg-green-50/30 text-green-800 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-3"
@@ -295,7 +284,7 @@ export default function ProductDetail() {
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.29-4.143c1.589.943 3.129 1.417 4.77 1.417 5.4 0 9.791-4.39 9.791-9.79.002-5.402-4.386-9.79-9.788-9.79-5.402 0-9.791 4.39-9.791 9.79 0 1.767.487 3.393 1.411 4.793l-1.032 3.766 3.86-1.011zm11.758-7.306c-.32-.16-1.89-.932-2.181-1.038-.29-.107-.502-.16-.712.16-.21.32-.811 1.038-.992 1.24-.182.201-.363.227-.683.067-.32-.16-1.353-.499-2.577-1.59-.953-.848-1.596-1.895-1.784-2.215-.188-.32-.02-.492.14-.652.144-.143.32-.373.48-.56.16-.188.214-.32.32-.534.107-.213.053-.4-.027-.56-.08-.16-.712-1.713-.976-2.353-.257-.622-.518-.538-.712-.548-.182-.008-.39-.011-.598-.011-.208 0-.547.077-.833.395-.286.318-1.092 1.068-1.092 2.606 0 1.538 1.118 3.023 1.272 3.235.154.212 2.2 3.359 5.33 4.716.745.322 1.327.515 1.78.658.748.236 1.428.203 1.967.122.6-.091 1.89-.773 2.156-1.48.267-.707.267-1.313.187-1.44-.08-.127-.291-.203-.611-.363z"/>
                 </svg>
-                Chat with us
+                Chat with Merchant
               </a>
 
               <div className="bg-amber-50 p-6 border border-amber-900/5">
@@ -306,10 +295,18 @@ export default function ProductDetail() {
               </div>
             </div>
 
-          <div className="mt-12">
-            <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Product Data</h4>
-            <div className="text-xs space-y-2 opacity-60 text-amber-900 whitespace-pre-wrap">
-              {product.productData || "Best for Gifts"}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Product Data</h4>
+              <div className="text-xs space-y-2 opacity-50 text-amber-900 whitespace-pre-wrap">
+                {product.productData || "Unique heritage piece from our boutique studio. Detailed specifications and artisan story available upon inquiry."}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] uppercase tracking-widest font-bold mb-4 text-amber-900">Delivery</h4>
+              <p className="text-xs opacity-50 leading-relaxed text-amber-900">
+                Ships within 7-10 business days. Priority heritage packaging ensures your items arrive in pristine condition.
+              </p>
             </div>
           </div>
         </motion.div>

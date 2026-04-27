@@ -294,7 +294,7 @@ export default function Home() {
           {categories.slice(0, 6).map((cat, idx) => (
             <Link 
               key={cat.id}
-              href={`/catalog?category=${encodeURIComponent(cat.name)}`}
+              href={`/catalog?category=${cat.id}`}
               className="group relative aspect-[4/5] bg-white overflow-hidden border border-amber-900/5"
             >
               <img 

@@ -13,23 +13,17 @@ export async function PATCH(
   }
 
   try {
-    const { name, imageUrl } = await request.json();
-    const data: any = {};
-    if (name) data.name = name;
-    if (imageUrl !== undefined) data.imageUrl = imageUrl;
-
+    const { name } = await request.json();
     const category = await prisma.category.update({
       where: { id },
-      data,
+      data: { name },
     });
 
-    if (name) {
-      // Update the 'category' string field in products for backward compatibility
-      await prisma.product.updateMany({
-        where: { categoryId: id },
-        data: { category: name },
-      });
-    }
+    // Update the 'category' string field in products for backward compatibility
+    await prisma.product.updateMany({
+      where: { categoryId: id },
+      data: { category: name },
+    });
 
     return NextResponse.json(category);
   } catch (error) {

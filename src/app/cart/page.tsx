@@ -34,8 +34,8 @@ export default function CartPage() {
     return Number(shippingRules.shippingCharge) || 500;
   };
 
-  const shipping = 0;
-  const total = subtotal;
+  const shipping = calculateShipping();
+  const total = subtotal + shipping;
 
   useEffect(() => {
     // Reset cart on first access to clear any potential ghost data from previous versions
@@ -177,17 +177,15 @@ export default function CartPage() {
               <span className="text-amber-900/60">Subtotal</span>
               <span className="text-amber-950">₹{subtotal.toFixed(2)}</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-amber-900/60">Shipping</span>
+              <span className="text-amber-950">₹{shipping.toFixed(2)}</span>
+            </div>
             <div className="h-px bg-amber-900/10 w-full my-2"></div>
             <div className="flex justify-between text-lg font-medium">
               <span className="text-amber-950">Total</span>
               <span className="text-amber-950">₹{total.toFixed(2)}</span>
             </div>
-          </div>
-
-          <div className="p-4 bg-amber-100/30 border border-amber-900/10 rounded-sm">
-            <p className="text-[9px] text-amber-900/70 leading-relaxed italic">
-              Shipping charges are calculated based on the greater of actual or volumetric weight, along with the delivery destination. If there are any additional fees, we will inform you in advance and collect them prior to dispatch.
-            </p>
           </div>
 
           <div className="space-y-4">

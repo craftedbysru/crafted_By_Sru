@@ -119,6 +119,7 @@ model Product {
   featured    Boolean  @default(false)
   isBestSeller Boolean @default(false)
   productData String?  @db.Text
+  rating      Float    @default(4.8)
   salesCount  Int      @default(0)
   createdAt   DateTime @default(now())
 }

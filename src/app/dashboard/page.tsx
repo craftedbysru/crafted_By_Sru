@@ -39,8 +39,6 @@ export default function MerchantDashboard() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
-  const [categoryImageUrl, setCategoryImageUrl] = useState("");
-  const [isCategoryUploading, setIsCategoryUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPinVerified, setIsPinVerified] = useState(false);
@@ -99,9 +97,8 @@ export default function MerchantDashboard() {
   const [uploading, setUploading] = useState(false);
 
   // Background upload helper
-  const startBackgroundUpload = async (file: File, type: "image" | "video" | "category-image", index?: number) => {
+  const startBackgroundUpload = async (file: File, type: "image" | "video", index?: number) => {
     if (type === "video") setVideoUploadStatus("pending");
-    else if (type === "category-image") setIsCategoryUploading(true);
     else if (index !== undefined) {
       setImageList(prev => {
         const next = [...prev];
@@ -172,10 +169,6 @@ export default function MerchantDashboard() {
         setVideoUploadStatus("success");
         setFormData(prev => ({ ...prev, videoUrl: finalPublicUrl }));
         toast.success("Video uploaded successfully");
-      } else if (type === "category-image") {
-        setCategoryImageUrl(finalPublicUrl);
-        setIsCategoryUploading(false);
-        toast.success("Category image uploaded");
       } else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
@@ -189,7 +182,6 @@ export default function MerchantDashboard() {
       // Fallback to legacy POST if GET fails or for smaller files if necessary,
       // but usually signed URL is more robust for 10MB+
       if (type === "video") setVideoUploadStatus("failed");
-      else if (type === "category-image") setIsCategoryUploading(false);
       else if (index !== undefined) {
         setImageList(prev => {
           const next = [...prev];
@@ -199,13 +191,6 @@ export default function MerchantDashboard() {
       }
       toast.error(`Background ${type} upload failed (${err.message}).`);
       return null;
-    }
-  };
-
-  const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      startBackgroundUpload(file, "category-image");
     }
   };
 
@@ -474,17 +459,13 @@ export default function MerchantDashboard() {
       const response = await fetchWithRetry(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name: categoryName,
-          imageUrl: categoryImageUrl || null
-        }),
+        body: JSON.stringify({ name: categoryName }),
       });
 
       if (response.ok) {
         toast.success(editingCategory ? "Category updated" : "Category added");
         setIsCategoryModalOpen(false);
         setCategoryName("");
-        setCategoryImageUrl("");
         setEditingCategory(null);
         fetchData();
       } else {
@@ -1597,17 +1578,15 @@ export default function MerchantDashboard() {
                 {editingCategory ? "Edit Category" : "Add New Category"}
               </h2>
               <form onSubmit={handleSaveCategory} className="space-y-8">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Name</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
-                      className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Name</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                  />
                 </div>
                 <button 
                   type="submit"

@@ -26,11 +26,13 @@ export async function GET() {
 
     // Format categories to include an 'image' field for convenience
     const formattedCategories = categories.map(cat => {
-      // Use the fallback logic from products
-      let image = null;
-      const firstProduct = cat.products[0];
-      if (firstProduct) {
-        image = firstProduct.imageUrl || (Array.isArray(firstProduct.images) ? firstProduct.images[0] : null);
+      // Use the explicit imageUrl if it exists, otherwise fallback to first product image
+      let image = cat.imageUrl;
+      if (!image) {
+        const firstProduct = cat.products[0];
+        if (firstProduct) {
+          image = firstProduct.imageUrl || (Array.isArray(firstProduct.images) ? firstProduct.images[0] : null);
+        }
       }
       
       return {
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { name } = await request.json();
+    const { name, imageUrl } = await request.json();
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
     const userId = (session.user as any).id;
@@ -64,7 +66,8 @@ export async function POST(request: Request) {
 
     const category = await rlsClient.category.create({
       data: { 
-        name
+        name,
+        imageUrl: imageUrl || null
       },
     });
     return NextResponse.json(category, { status: 201 });
