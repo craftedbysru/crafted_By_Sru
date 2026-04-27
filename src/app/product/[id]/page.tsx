@@ -17,7 +17,7 @@ export default function ProductDetail() {
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(25);
   const [isAdded, setIsAdded] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
@@ -100,14 +100,14 @@ export default function ProductDetail() {
     toast.success(`${product.name} added to cart`);
   };
 
+  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 25 : 25));
   const incrementQty = () => {
-    if (quantity < product.stock) {
-      setQuantity(prev => prev + 1);
+    if (quantity + 25 <= product.stock) {
+      setQuantity(prev => prev + 25);
     } else {
       toast.warning(`Maximum available stock reached`);
     }
   };
-  const decrementQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
   if (loading) {
     return (

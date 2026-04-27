@@ -1599,46 +1599,6 @@ export default function MerchantDashboard() {
               <form onSubmit={handleSaveCategory} className="space-y-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Image</label>
-                    <div className="flex flex-col gap-4">
-                      {categoryImageUrl && (
-                        <div className="aspect-video w-full bg-amber-50 border border-amber-900/10 overflow-hidden relative group">
-                          <img src={categoryImageUrl} alt="Category" className="w-full h-full object-cover" />
-                          <button 
-                            type="button"
-                            onClick={() => setCategoryImageUrl("")}
-                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-4">
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          id="category-image-upload"
-                          onChange={handleCategoryImageUpload}
-                          className="hidden"
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => document.getElementById('category-image-upload')?.click()}
-                          disabled={isCategoryUploading}
-                          className="flex-1 py-3 border border-dashed border-amber-900/20 text-[10px] uppercase tracking-widest font-bold text-amber-900/60 hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
-                        >
-                          {isCategoryUploading ? (
-                            <div className="w-3 h-3 border border-amber-950 border-t-transparent rounded-full animate-spin" />
-                          ) : <ImageIcon size={14} />}
-                          {categoryImageUrl ? "Change Image" : "Upload Image"}
-                        </button>
-                      </div>
-                      <p className="text-[8px] text-amber-900/30 uppercase tracking-[0.2em] text-center">Recommended: 800x1000px</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Category Name</label>
                     <input 
                       required
