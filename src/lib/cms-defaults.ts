@@ -93,8 +93,36 @@ export const CMS_DEFAULTS: Record<string, any[]> = {
       section: "main",
       content: {
         title: "Returns & Exchanges",
-        intro: "Due to the handcrafted nature of our products, each item is unique.",
-        content: "We accept returns only for damaged products reported within 48 hours of delivery."
+        intro: "Due to the handcrafted nature of our products, each item is unique. At Crafted by Sru, we strive for perfection in every piece we curate.",
+        sections: [
+          {
+            title: "Our Policy",
+            content: "We accept returns only for damaged products reported within 48 hours of delivery."
+          },
+          {
+            title: "Refund Timeline",
+            content: "Refunds are processed within 7-10 business days after we receive and inspect the returned item."
+          }
+        ]
+      }
+    }
+  ],
+  terms: [
+    {
+      section: "main",
+      content: {
+        title: "Terms of Service",
+        intro: "By accessing or using the Crafted by Sru website, you agree to be bound by these Terms of Service and all applicable laws and regulations.",
+        sections: [
+          {
+            title: "Acceptance of Terms",
+            content: "By accessing or using the Crafted by Sru website, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site."
+          },
+          {
+            title: "Use License",
+            content: "Permission is granted to temporarily download one copy of the materials (information or software) on Crafted by Sru's website for personal, non-commercial transitory viewing only."
+          }
+        ]
       }
     }
   ],
