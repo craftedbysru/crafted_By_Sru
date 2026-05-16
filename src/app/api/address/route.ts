@@ -8,6 +8,7 @@ const addressSchema = z.object({
   phone: z.string().min(10, "Valid phone number is required").max(15).regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"),
   street: z.string().min(1, "Street is required").max(200),
   street2: z.string().max(200).optional().or(z.literal("")),
+  street3: z.string().max(200).optional().or(z.literal("")),
   city: z.string().min(1, "City is required").max(100),
   state: z.string().min(1, "State is required").max(100),
   zipCode: z.string().length(6, "Pincode must be exactly 6 digits").regex(/^\d+$/, "Pincode must be numeric"),
@@ -47,13 +48,10 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const validatedData = addressSchema.parse(body);
     const userId = (session.user as any)?.id;
     
-    // Use the RLS-aware client extension
-    const rlsClient = prisma.$withUser(userId);
-    
-    const user = await rlsClient.user.findUnique({
+    // Auto-populate name and phone from session/user if missing and user didn't provide them (since we might remove them from UI)
+    const user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -61,6 +59,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const validatedData = addressSchema.parse({
+      ...body,
+      name: body.name || user.name || "Customer",
+      phone: body.phone || user.phone || "9999999999" // Fallback but usually user has phone from login
+    });
+    
+    // Use the RLS-aware client extension
+    const rlsClient = prisma.$withUser(userId);
+    
     const newAddress = await rlsClient.address.create({
       data: {
         ...validatedData,

@@ -1,6 +1,6 @@
 // Refreshed: 2026-04-18
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Cormorant_Garamond } from "next/font/google";
+import { Inter, Libre_Baskerville, Ovo } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -9,10 +9,14 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif" });
-const cormorant = Cormorant_Garamond({ 
+const baskerville = Libre_Baskerville({ 
   subsets: ["latin"], 
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "700"],
+  variable: "--font-serif" 
+});
+const ovo = Ovo({ 
+  subsets: ["latin"], 
+  weight: ["400"],
   variable: "--font-serif-alt" 
 });
 
@@ -29,8 +33,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} ${cormorant.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('app-theme');
+                  if (theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} ${baskerville.variable} ${ovo.variable} antialiased font-serif`}>
         <Script
           id="razorpay-checkout-js"
           src="https://checkout.razorpay.com/v1/checkout.js"

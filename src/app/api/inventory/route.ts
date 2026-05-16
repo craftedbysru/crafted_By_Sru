@@ -7,16 +7,33 @@ import { z } from "zod";
 const productSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().min(1, "Description is required").max(1000),
-  price: z.union([z.string(), z.number()]).transform((val) => Number(val)),
+  price: z.union([z.string(), z.number()]).transform((val) => {
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
+  }),
   sku: z.string().optional(),
   category: z.string().optional(),
   categoryId: z.string().optional(),
   imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
   images: z.array(z.string().url()).optional().default([]),
   videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
-  stock: z.union([z.string(), z.number()]).transform((val) => Number(val)).optional().default(10),
+  stock: z.union([z.string(), z.number()]).transform((val) => {
+    const n = Math.floor(Number(val));
+    return isNaN(n) ? 10 : n;
+  }).optional().default(10),
   isBestSeller: z.boolean().optional().default(false),
   productData: z.string().optional().default(""),
+  offerId: z.string().optional().nullable(),
+  originalPrice: z.union([z.string(), z.number()]).transform((val) => {
+    if (val === "" || val === null) return null;
+    const n = Number(val);
+    return isNaN(n) ? null : n;
+  }).optional().nullable(),
+  discount: z.union([z.string(), z.number()]).transform((val) => {
+    if (val === "" || val === null) return null;
+    const n = Number(val);
+    return isNaN(n) ? null : n;
+  }).optional().nullable(),
 });
 
 export const dynamic = "force-dynamic";
@@ -25,6 +42,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const bestSeller = searchParams.get("bestSeller") === "true";
+    const hasOffer = searchParams.get("hasOffer") === "true";
+    const offerIdParam = searchParams.get("offerId");
     const limitStr = searchParams.get("limit");
     const limit = limitStr ? parseInt(limitStr) : undefined;
     const sort = searchParams.get("sort") === "desc" ? { createdAt: "desc" as const } : undefined;
@@ -35,10 +54,12 @@ export async function GET(request: Request) {
     // Safety check for NaN limit
     const validatedLimit = (limit !== undefined && !isNaN(limit)) ? limit : undefined;
     
-    console.log(`Inventory GET: bestSeller=${bestSeller}, limit=${validatedLimit}, sort=${!!sort}, search=${search}, categoryId=${categoryId}`);
+    console.log(`Inventory GET: bestSeller=${bestSeller}, limit=${validatedLimit}, sort=${!!sort}, search=${search}, categoryId=${categoryId}, hasOffer=${hasOffer}, offerId=${offerIdParam}`);
     
     const filter: any = {};
     if (bestSeller) filter.isBestSeller = true;
+    if (hasOffer) filter.offerId = { not: null };
+    if (offerIdParam) filter.offerId = offerIdParam;
     if (categoryId && categoryId !== "all" && categoryId !== "All") {
       filter.OR = [
         { categoryId: categoryId },

@@ -8,7 +8,8 @@ export const getInventory = async (filter: any = {}, options: { take?: number, o
     take: options.take,
     orderBy: options.orderBy,
     include: {
-      categoryRel: true
+      categoryRel: true,
+      offerRel: true
     }
   }));
 };
@@ -17,7 +18,8 @@ export const getProductById = async (id: string) => {
   return await withDbRetry(() => prisma.product.findUnique({
     where: { id },
     include: {
-      categoryRel: true
+      categoryRel: true,
+      offerRel: true
     }
   }));
 };

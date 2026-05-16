@@ -228,7 +228,30 @@ export default function ProductDetail() {
               <h1 className="font-serif text-5xl md:text-7xl text-amber-950 leading-tight">{product.name}</h1>
             </div>
             <div className="text-left md:text-right">
-              <p className="text-4xl font-light text-amber-950">₹{product.price.toLocaleString()}</p>
+              <div className="flex flex-col md:items-end gap-1">
+                <div className="flex items-center gap-3">
+                  <p className="text-4xl font-light text-amber-950">
+                    ₹{product.price.toLocaleString()}
+                  </p>
+                  {(product.discount || product.offerRel?.discount || (product.originalPrice && product.originalPrice > product.price)) && (
+                    <p className="text-lg text-amber-900/40 line-through mt-2">
+                       ₹{(product.originalPrice || Math.round(product.price / (1 - ((product.discount || product.offerRel?.discount || 20) / 100)))).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                {(product.discount || product.offerRel) && (
+                  <div className="flex items-center gap-2">
+                     <span className="px-2 py-0.5 bg-amber-950 text-white text-[8px] font-bold uppercase tracking-widest">
+                       {product.discount ? "Special Price" : product.offerRel?.name}
+                     </span>
+                     {(product.discount > 0 || product.offerRel?.discount > 0) && (
+                       <span className="text-[10px] text-amber-700 font-bold uppercase tracking-widest">
+                         {Math.max(product.discount || 0, product.offerRel?.discount || 0)}% OFF
+                       </span>
+                     )}
+                  </div>
+                )}
+              </div>
               <p className="text-[10px] text-amber-900/50 mt-1 uppercase tracking-widest">Taxes included. Shipping calculated at checkout</p>
             </div>
           </div>

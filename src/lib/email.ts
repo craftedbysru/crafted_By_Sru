@@ -47,19 +47,22 @@ export async function sendEmail({ to, subject, html, type }: { to: string, subje
   const resend = await getResend();
   if (resend) {
     try {
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "concierge@craftedbysru.com";
+      const fromName = process.env.RESEND_FROM_NAME || "Crafted by Sru";
+      
       const { data, error } = await resend.emails.send({
-        from: "Crafted by Sru <concierge@craftedbysru.com>",
+        from: `${fromName} <${fromEmail}>`,
         to,
         subject,
         html,
       });
       if (error) {
-        console.error("Resend error:", error);
+        console.error("[RESEND ERROR]", JSON.stringify(error, null, 2));
         return { success: false, error };
       }
       return { success: true, messageId: data?.id };
     } catch (err) {
-      console.error("Resend execution failed:", err);
+      console.error("[RESEND EXECUTION FAILED]", err);
       return { success: false, error: err };
     }
   }

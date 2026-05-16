@@ -6,14 +6,17 @@ import Link from "next/link";
 import { ASSETS, getPlaceholderImage } from "@/lib/images";
 import { ProductCardSlideshow } from "@/components/ProductCardSlideshow";
 import { ArrowRight, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [cmsContent, setCmsContent] = useState<any[]>([]);
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [offers, setOffers] = useState<any[]>([]);
 
   // Robust fetch with automatic retry for unstable connections
   const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 5, backoff = 500): Promise<Response> => {
@@ -41,6 +44,7 @@ export default function Home() {
     const cacheKey_content = "sru_cms_cache_home";
     const cacheKey_products = "sru_inventory_cache_featured";
     const cacheKey_categories = "sru_categories_cache";
+    const cacheKey_offers = "sru_offers_cache";
 
     // Load from cache initially
     const cachedContent = localStorage.getItem(cacheKey_content);
@@ -52,25 +56,31 @@ export default function Home() {
     const cachedCats = localStorage.getItem(cacheKey_categories);
     if (cachedCats) setCategories(JSON.parse(cachedCats));
 
+    const cachedOffers = localStorage.getItem(cacheKey_offers);
+    if (cachedOffers) setOffers(JSON.parse(cachedOffers));
+
     const fetchData = async () => {
       try {
-        const [productsRes, contentRes, categoriesRes] = await Promise.all([
+        const [productsRes, contentRes, categoriesRes, offersRes, allProductsRes] = await Promise.all([
           fetchWithRetry("/api/inventory?bestSeller=true"),
           fetchWithRetry("/api/content?page=home"),
-          fetchWithRetry("/api/categories")
+          fetchWithRetry("/api/categories"),
+          fetchWithRetry("/api/offers"),
+          fetchWithRetry("/api/inventory?hasOffer=true") // Only products with offers for display
         ]);
 
         if (productsRes.ok) {
           let products = await productsRes.json();
-          if (products.length === 0) {
-            const fallbackRes = await fetch("/api/inventory");
-            if (fallbackRes.ok) {
-              const allProducts = await fallbackRes.json();
-              products = allProducts.slice(0, 6);
-            }
-          }
           setFeaturedProducts(products);
           localStorage.setItem(cacheKey_products, JSON.stringify(products));
+        }
+
+        if (allProductsRes.ok) {
+          const allData = await allProductsRes.json();
+          setAllProducts(allData);
+          
+          // If featured is empty, use some from all
+          setFeaturedProducts(prev => prev.length === 0 ? allData.slice(0, 6) : prev);
         }
 
         if (contentRes.ok) {
@@ -83,6 +93,12 @@ export default function Home() {
           const cats = await categoriesRes.json();
           setCategories(cats);
           localStorage.setItem(cacheKey_categories, JSON.stringify(cats));
+        }
+
+        if (offersRes.ok) {
+          const os = await offersRes.json();
+          setOffers(os);
+          localStorage.setItem(cacheKey_offers, JSON.stringify(os));
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -228,19 +244,19 @@ export default function Home() {
       </section>
 
       {/* The Soul of Sru Section */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-16 md:py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-[#D1E1D9] opacity-80" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')] opacity-20" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="relative"
+              className="relative pr-4 md:pr-0"
             >
-              <div className="aspect-square overflow-hidden shadow-2xl bg-amber-50">
+              <div className="aspect-square overflow-hidden shadow-2xl bg-amber-50 relative z-10 transition-transform hover:scale-[1.02] duration-700">
                 <img 
                   src={ASSETS.artisan} 
                   alt="Heritage Curation" 
@@ -248,8 +264,8 @@ export default function Home() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="absolute -top-8 -right-8 bg-[#FFD98E] p-8 max-w-[220px] shadow-xl">
-                <p className="font-serif-alt text-xl text-amber-950 leading-tight italic">
+              <div className="md:absolute -mt-12 md:mt-0 relative z-20 md:-top-8 -right-4 md:-right-8 bg-[#FFD98E] p-6 md:p-8 max-w-[200px] md:max-w-[240px] shadow-2xl ml-auto md:ml-0">
+                <p className="font-serif-alt text-lg md:text-2xl text-amber-950 leading-tight italic">
                   "{soulContent.quote}"
                 </p>
               </div>
@@ -259,10 +275,10 @@ export default function Home() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-10"
+              className="pt-8 lg:pt-0 space-y-6 md:space-y-10"
             >
-              <h2 className="font-serif-alt text-6xl text-amber-950">{soulContent.title}</h2>
-              <div className="space-y-6 text-amber-900/80 leading-relaxed text-lg">
+              <h2 className="font-serif-alt text-4xl md:text-6xl text-amber-950">{soulContent.title}</h2>
+              <div className="space-y-4 md:space-y-6 text-amber-900/80 leading-relaxed text-base md:text-lg">
                 <p>
                   {soulContent.description1}
                 </p>
@@ -278,14 +294,90 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Dynamic Offer Sections - Moved above Curated Ledger */}
+      {offers.map((offer) => {
+        const offerProducts = allProducts.filter(p => p.offerId === offer.id);
+        
+        if (offerProducts.length === 0) return null;
+
+        return (
+          <section key={offer.id} className="py-24 bg-amber-950 text-white overflow-hidden">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
+                <div>
+                  <div className="flex items-center gap-4 mb-4">
+                     <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60 font-bold">Special Offer</p>
+                     {(offer.discount || offerProducts[0]?.discount) && (
+                       <span className="px-2 py-1 bg-amber-200 text-amber-950 text-[10px] font-bold">
+                         {offer.discount || offerProducts[0]?.discount}% OFF
+                       </span>
+                     )}
+                  </div>
+                  <h2 className="font-serif-alt text-5xl text-white italic">{offer.name}</h2>
+                  <p className="text-amber-50/60 mt-6 max-w-xl text-lg">{offer.description}</p>
+                </div>
+                <Link href={`/catalog?offer=${offer.id}`} className="text-[10px] uppercase tracking-widest text-white font-bold border-b border-white/20 pb-1 hover:border-white transition-all">
+                  Shop the Offer
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {offerProducts.slice(0, 4).map((product, i) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group"
+                  >
+                    <Link href={`/product/${product.id}`} className="block h-full">
+                      <div className="aspect-[3/4] overflow-hidden bg-white/5 mb-6 relative">
+                        <ProductCardSlideshow product={product} />
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-serif text-xl text-white group-hover:text-amber-200 transition-colors line-clamp-1">{product.name}</h3>
+                          {(product.discount || (product.offerRel && product.offerRel.discount)) && (
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[7px] bg-red-600 text-white px-1.5 py-0.5 font-bold uppercase tracking-widest">
+                                    {Math.max(product.discount || 0, product.offerRel?.discount || 0)}% OFF
+                                </span>
+                                {product.offerRel && (
+                                    <span className="text-[6px] text-amber-200/60 uppercase tracking-tighter">
+                                        {product.offerRel.name}
+                                    </span>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-amber-200 font-medium italic text-lg">₹{product.price.toLocaleString()}</p>
+                          {(product.originalPrice || product.discount || (product.offerRel && product.offerRel.discount)) && (
+                            <p className="text-xs text-white/40 line-through">
+                              ₹{(product.originalPrice || Math.round(product.price / (1 - (Math.max(product.discount || 0, product.offerRel?.discount || 0) / 100)))).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })}
+
       {/* The Curated Ledger Section */}
-      <section className="py-24 max-w-7xl mx-auto px-6">
-        <div className="flex justify-between items-end mb-16">
-          <div>
-            <h2 className="font-serif-alt text-6xl text-amber-950 mb-4">{curatedContent.title}</h2>
-            <p className="text-amber-900/50 max-w-md">{curatedContent.description}</p>
+      <section className="py-24 max-w-7xl mx-auto px-6 overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-10">
+          <div className="max-w-xl">
+            <h2 className="font-serif-alt text-4xl md:text-6xl text-amber-950 mb-6 break-words leading-tight">{curatedContent.title}</h2>
+            <p className="text-amber-900/50 text-sm md:text-base leading-relaxed">{curatedContent.description}</p>
           </div>
-          <Link href="/catalog" className="text-[10px] uppercase tracking-widest text-amber-950 font-bold border-b border-amber-950/20 pb-1 hover:border-amber-950 transition-all">
+          <Link href="/catalog" className="inline-block text-[10px] uppercase tracking-widest text-amber-950 font-bold border-b border-amber-950/20 pb-2 hover:border-amber-950 transition-all">
             View All Tiers
           </Link>
         </div>
@@ -295,17 +387,19 @@ export default function Home() {
             <Link 
               key={cat.id}
               href={`/catalog?category=${encodeURIComponent(cat.name)}`}
-              className="group relative aspect-[4/5] bg-white overflow-hidden border border-amber-900/5"
+              className="group relative aspect-[4/5] bg-white overflow-hidden border border-amber-900/5 shadow-sm"
             >
               <img 
-                src={cat.image || getPlaceholderImage(cat.name)} 
+                src={cat.imageUrl || cat.image || getPlaceholderImage(cat.name)} 
                 alt={cat.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-1000"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-amber-950/0 group-hover:bg-amber-950/20 transition-all duration-700" />
-              <div className="absolute bottom-10 left-10">
-                <h3 className="font-serif-alt text-3xl text-white">{cat.name}</h3>
+              <div className="absolute inset-0 bg-amber-950/20 group-hover:bg-amber-950/40 transition-all duration-700" />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="border border-white/40 p-6 backdrop-blur-[2px]">
+                  <h3 className="font-serif text-3xl text-white tracking-widest">{cat.name}</h3>
+                </div>
               </div>
             </Link>
           ))}
@@ -357,14 +451,36 @@ export default function Home() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-start">
                         <p className="text-[10px] uppercase tracking-[0.2em] text-amber-900/40 font-bold">{product.category}</p>
-                        {getProductCartCount(product.id) > 0 && (
-                          <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
-                            {getProductCartCount(product.id)} in cart
-                          </span>
+                        <div className="flex flex-col items-end gap-1">
+                          {(product.discount || (product.offerRel && product.offerRel.discount)) && (
+                            <span className="text-[8px] bg-red-600 text-white px-1.5 py-0.5 font-bold uppercase tracking-widest">
+                              {Math.max(product.discount || 0, product.offerRel?.discount || 0)}% Off
+                            </span>
+                          )}
+                          {product.offerRel && (
+                            <span className="text-[7px] text-amber-900/40 uppercase tracking-widest font-bold">
+                              {product.offerRel.name}
+                            </span>
+                          )}
+                          {getProductCartCount(product.id) > 0 && (
+                            <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                              {getProductCartCount(product.id)} in cart
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <h3 className="font-serif text-2xl text-amber-950 group-hover:text-amber-800 transition-colors font-medium">{product.name}</h3>
+                      <div className="flex items-center gap-3">
+                        <p className={cn(
+                          "font-medium italic text-lg",
+                          (product.originalPrice || product.discount || (product.offerRel && product.offerRel.discount)) ? "text-red-600" : "text-amber-950"
+                        )}>₹{product.price.toLocaleString()}</p>
+                        {(product.originalPrice || product.discount || (product.offerRel && product.offerRel.discount)) && (
+                          <p className="text-xs text-amber-900/40 line-through">
+                            ₹{(product.originalPrice || Math.round(product.price / (1 - (Math.max(product.discount || 0, product.offerRel?.discount || 0) / 100)))).toLocaleString()}
+                          </p>
                         )}
                       </div>
-                      <h3 className="font-serif-alt text-2xl text-amber-950 group-hover:text-amber-800 transition-colors font-medium">{product.name}</h3>
-                      <p className="text-amber-950 font-medium italic">₹{product.price}</p>
                     </div>
                   </Link>
                 </motion.div>
@@ -421,6 +537,7 @@ export default function Home() {
         </section>
       ))}
 
+
       {/* Recent Curations Section - Redesigned to a sophisticated Bento Gallery */}
       <section className="py-32 bg-amber-50/30 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
@@ -455,10 +572,25 @@ export default function Home() {
                            </div>
                         </div>
                         <div className="mt-6 p-4 bg-white flex-1 border-t-0 border border-amber-900/5 hover:bg-amber-50/30 transition-colors">
-                          <h4 className="font-serif text-xl text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h4>
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="font-serif text-xl text-amber-950 group-hover:text-amber-700 transition-colors">{product.name}</h4>
+                            {product.discount && (
+                                <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 font-bold uppercase tracking-widest">
+                                    {product.discount}% Off
+                                </span>
+                            )}
+                          </div>
                           <div className="flex justify-between items-center mt-2">
                             <p className="text-[9px] uppercase tracking-widest text-amber-900/40 font-bold">Heritage Collection</p>
-                            <p className="text-sm font-semibold text-amber-950">₹{product.price}</p>
+                            <div className="flex items-center gap-2">
+                              <p className={cn(
+                                "text-sm font-semibold",
+                                product.originalPrice ? "text-red-600" : "text-amber-950"
+                              )}>₹{product.price.toLocaleString()}</p>
+                              {product.originalPrice && (
+                                <p className="text-[10px] text-amber-900/30 line-through">₹{product.originalPrice.toLocaleString()}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -467,7 +599,7 @@ export default function Home() {
               </>
             ) : (
               <div className="col-span-12 py-32 text-center border border-dashed border-amber-900/10 rounded-2xl">
-                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Preparing our latest handcrafted chronicles...</p>
+                <p className="text-[10px] uppercase tracking-widest text-amber-900/40">Preparing our latest return gift chronicles...</p>
               </div>
             )}
           </div>

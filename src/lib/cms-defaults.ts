@@ -138,11 +138,15 @@ export const CMS_DEFAULTS: Record<string, any[]> = {
   ],
   config: [
     {
-      section: "shipping",
+      section: "shipping-logic",
       content: {
         baseCharge: 500,
         freeAbove: 25000,
-        perItemSurcharge: 50
+        perItemSurcharge: 50,
+        globalDisplayText: "",
+        rules: [
+          { minItems: 0, minPrice: 0, cost: 500, displayText: "" }
+        ]
       }
     },
     {

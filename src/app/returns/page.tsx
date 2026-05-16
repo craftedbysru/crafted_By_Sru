@@ -39,9 +39,16 @@ export default function ReturnsPage() {
           </section>
 
           {Array.isArray(mainContent.sections) && mainContent.sections.map((s: any, i: number) => (
-            <section key={i}>
-              <h2 className="font-serif text-2xl text-amber-950 mb-4">{s.title}</h2>
-              <p>{s.content}</p>
+            <section key={i} className="space-y-4">
+              <h2 className="font-serif text-2xl text-amber-950">{s.title}</h2>
+              <div className="space-y-2">
+                {s.content.split('\n').filter((p: string) => p.trim()).map((point: string, j: number) => (
+                  <div key={j} className="flex gap-4 items-start">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-900/40 mt-[0.6rem] shrink-0" />
+                    <p className="m-0">{point.startsWith('•') ? point.substring(1).trim() : point}</p>
+                  </div>
+                ))}
+              </div>
             </section>
           ))}
         </div>

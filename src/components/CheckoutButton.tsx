@@ -7,9 +7,12 @@ import { useSession } from "next-auth/react";
 
 interface CheckoutButtonProps {
   amount: number;
+  currency?: string;
+  exchangeRate?: number;
   orderData: {
     items: any[];
     total: number;
+    currency?: string;
     shippingAddress: any;
     packagingDetails?: string;
     deliveryType?: string;
@@ -27,6 +30,8 @@ declare global {
 
 export default function CheckoutButton({
   amount,
+  currency = "INR",
+  exchangeRate = 1,
   orderData,
   onSuccess,
   className,
@@ -44,33 +49,42 @@ export default function CheckoutButton({
     }
 
     setLoading(true);
+    let dbOrderId = "";
     try {
-      // 1. Create Razorpay order
+      // 1. Create Order in DB & Razorpay
       const response = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ 
+          amount: amount * exchangeRate,
+          currency: currency,
+          orderData: orderData
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create order");
+        throw new Error("Failed to initiate order process");
       }
 
-      const order = await response.json();
+      const { razorpayOrder, dbOrderId: id } = await response.json();
+      dbOrderId = id;
 
       // 2. Open Razorpay checkout
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
-        amount: order.amount,
-        currency: order.currency,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
         name: "Crafted by Sru",
         description: "Heritage Curations Purchase",
-        order_id: order.id,
+        order_id: razorpayOrder.id,
         handler: async function (response: any) {
           try {
-            // 3. Verify payment
+            // 3. Verify payment with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
             const verifyRes = await fetch("/api/payment/verify", {
               method: "POST",
               headers: {
@@ -82,7 +96,10 @@ export default function CheckoutButton({
                 razorpay_signature: response.razorpay_signature,
                 orderData,
               }),
+              signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (!verifyRes.ok) {
               const errorText = await verifyRes.text();
@@ -100,13 +117,19 @@ export default function CheckoutButton({
             }
           } catch (error: any) {
             console.error("Verification error:", error);
-            toast.error(error.message || "Payment verification failed");
+            const msg = error.name === 'AbortError' ? "Verification timed out. Please check your account section in a few minutes." : (error.message || "Unknown error");
+            router.push(`/order-failure/${dbOrderId}?error=${encodeURIComponent(msg)}`);
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
           }
         },
         prefill: {
-          name: "",
-          email: "",
-          contact: "",
+          name: `${orderData.shippingAddress.firstName} ${orderData.shippingAddress.lastName}`,
+          email: orderData.shippingAddress.email,
+          contact: orderData.shippingAddress.phone,
         },
         theme: {
           color: "#78350f", // amber-900
@@ -115,10 +138,35 @@ export default function CheckoutButton({
 
       const rzp = new window.Razorpay(options);
       
-      rzp.on('payment.failed', function (response: any) {
-        console.error("Payment failed:", response.error);
-        toast.error(`Payment failed: ${response.error.description}`);
-        // Optionally log failed attempt to server
+      rzp.on('payment.failed', async function (response: any) {
+        console.error("Payment failure details:", JSON.stringify(response.error, null, 2));
+        const err = response.error || {};
+        
+        // Don't close the modal if you want them to be able to try another method, 
+        // but the user says "website still shows the razorpay pop-up ... what to do"
+        // If we want to force them to the failure page:
+        // rzp.close(); 
+        
+        try {
+          // Record failure in DB
+          await fetch("/api/payment/record-failure", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: dbOrderId,
+              errorDetails: err
+            })
+          });
+        } catch (e) {
+          console.error("Sync error recording failure:", e);
+        }
+
+        const code = err.code || "PAYMENT_FAILED";
+        const desc = err.description || "The transaction was declined by the provider.";
+        
+        toast.error(`Payment failed: ${desc}`);
+        setLoading(false);
+        router.push(`/order-failure/${dbOrderId}?code=${code}&desc=${encodeURIComponent(desc)}`);
       });
 
       rzp.open();

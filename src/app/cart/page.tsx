@@ -191,33 +191,17 @@ export default function CartPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-900/10 p-6 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-950">Online Orders Coming Soon</p>
-              <p className="text-xs text-amber-900/60 leading-relaxed italic">
-                Our online ordering system is currently under development to ensure a seamless heritage experience. 
-              </p>
-              <div className="h-px bg-amber-900/10 w-full my-1" />
-              <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-amber-900/40">To Place Your Order:</p>
-              <Link 
-                href={`https://wa.me/919342646579?text=Hello! I'd like to place an order for the following items from my cart: ${cart.map(i => `${i.name} (Qty: ${i.quantity})`).join(', ')}`}
-                target="_blank"
-                className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-950 border-b border-amber-950 hover:text-amber-700 transition-colors py-1"
-              >
-                Order via WhatsApp
-              </Link>
-            </div>
-
-            <button
-              disabled
-              className="w-full py-5 bg-amber-950/20 text-white/50 text-[10px] uppercase tracking-[0.3em] font-bold cursor-not-allowed flex items-center justify-center gap-3 backdrop-blur-sm shadow-inner"
+            <Link
+              href="/checkout"
+              className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all flex items-center justify-center gap-3 shadow-xl"
             >
-              Checkout Restricted
+              Proceed to Checkout
               <ArrowRight size={16} />
-            </button>
+            </Link>
           </div>
 
           <p className="text-[10px] uppercase tracking-widest text-center opacity-30 text-amber-900">
-            Secure checkout & Razorpay integration coming soon
+            Secure checkout powered by Razorpay
           </p>
         </div>
       </div>

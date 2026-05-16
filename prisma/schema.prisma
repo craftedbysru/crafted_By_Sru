@@ -75,8 +75,11 @@ model VerificationToken {
 
 model Address {
   id        String  @id @default(uuid())
+  name      String?
+  phone     String?
   street    String
   street2   String?
+  street3   String?
   city      String
   state     String?
   zipCode   String
@@ -88,8 +91,19 @@ model Address {
 model Category {
   id        String    @id @default(uuid())
   name      String    @unique
+  imageUrl  String?
   products  Product[]
   createdAt DateTime  @default(now())
+}
+
+model Offer {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  discount    Float?    // Percentage discount
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model WebsiteContent {
@@ -107,6 +121,8 @@ model Product {
   id          String   @id @default(uuid())
   name        String
   price       Float
+  originalPrice Float?
+  discount    Float?   // Specific discount for this product
   description String?
   sku         String?
   category    String?  // Legacy or display name
@@ -120,7 +136,15 @@ model Product {
   isBestSeller Boolean @default(false)
   productData String?  @db.Text
   salesCount  Int      @default(0)
+  offerId     String?
+  offerRel    Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+
+  @@index([categoryId])
+  @@index([offerId])
+  @@index([featured])
+  @@index([isBestSeller])
+  @@index([createdAt(sort: Desc)])
 }
 
 model EmailTemplate {
@@ -137,14 +161,20 @@ model Order {
   customerId      String
   items           Json     // Storing items as JSON for simplicity
   total           Float
+  currency        String   @default("INR")
   status          String   @default("pending") // pending, processing, shipped, delivered, cancelled
   paymentStatus   String   @default("unpaid") // unpaid, paid, failed, refunded
   shippingAddress Json
+  phone           String?
   packagingDetails String?
   deliveryType    String?
   transactions    Transaction[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Transaction {

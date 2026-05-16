@@ -56,31 +56,13 @@ function TrackingContent() {
     <div className="pt-32 pb-20 px-6 min-h-screen bg-stone-50">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
-          <h1 className="font-serif text-5xl text-amber-950 mb-6">Track Your Curation</h1>
+          <h1 className="font-serif text-5xl text-amber-950 mb-6">Track Your Order</h1>
           <p className="text-amber-900/60 max-w-lg mx-auto">
-            Experience the journey of your handcrafted heritage. Enter your order ID to see the current status of your preservation.
+            Track the journey of your return gifts and heritage curations. Experience the care we put into every festive delivery.
           </p>
         </div>
 
-        <form onSubmit={handleTrack} className="flex gap-4 mb-16 max-w-xl mx-auto">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30" size={18} />
-            <input 
-              type="text"
-              placeholder="Order ID (e.g., ORD-12345)"
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
-              className="w-full bg-white border border-amber-900/10 pl-12 pr-6 py-4 text-[12px] uppercase tracking-widest font-bold text-amber-950 focus:outline-none focus:border-amber-950 transition-colors"
-            />
-          </div>
-          <button 
-            type="submit"
-            disabled={loading}
-            className="bg-amber-950 text-white px-8 py-4 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-amber-900 transition-colors disabled:opacity-50"
-          >
-            {loading ? "Locating..." : "Track"}
-          </button>
-        </form>
+        {/* Form removed as requested - order ID is handled via URL */}
 
         {order ? (
           <motion.div 

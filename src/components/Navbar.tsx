@@ -31,10 +31,10 @@ export const Navbar = () => {
     
     const updateCartCount = () => {
       // Reset cart on first access to clear any potential ghost data from previous versions
-      const initialized = localStorage.getItem("sru_cart_init_v3");
+      const initialized = localStorage.getItem("sru_cart_init_v5");
       if (!initialized) {
         localStorage.removeItem("sru_cart");
-        localStorage.setItem("sru_cart_init_v3", "true");
+        localStorage.setItem("sru_cart_init_v5", "true");
         window.dispatchEvent(new Event("sru_cart_change"));
         return;
       }
@@ -105,7 +105,7 @@ export const Navbar = () => {
     <>
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-6 py-4 flex items-center justify-between",
-      isScrolled ? "bg-white shadow-md border-b border-amber-900/10 py-3" : "bg-transparent"
+      isScrolled ? "bg-bg-card shadow-md border-b border-border-subtle py-3" : "bg-transparent"
     )}>
       <Link href="/" className="flex items-center gap-2">
         <div className="flex flex-col">
@@ -126,9 +126,6 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button onClick={() => setIsSearchOpen(true)} className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900">
-            <Search size={18} />
-          </button>
           <Link href="/cart" className="p-2 hover:bg-amber-900/10 rounded-full transition-colors relative text-amber-900">
             <ShoppingBag size={18} />
             {cartCount > 0 && (
@@ -165,7 +162,7 @@ export const Navbar = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="absolute top-full left-0 right-0 bg-white border-b border-amber-900/10 p-6 md:hidden flex flex-col gap-4 overflow-hidden"
+              className="absolute top-full left-0 right-0 bg-bg-card border-b border-border-subtle p-6 md:hidden flex flex-col gap-4 overflow-hidden"
             >
               {userRole === "merchant" ? (
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900 font-bold">Dashboard</Link>
@@ -181,7 +178,6 @@ export const Navbar = () => {
                 <div className="flex flex-col gap-4 pt-4 border-t border-amber-900/5">
                   <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900">Login</Link>
                   <Link href="/auth/signup" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900 font-bold">Sign Up</Link>
-                  <Link href="/merchant-login" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-700 font-bold">Merchant Portal</Link>
                 </div>
               )}
             </motion.div>
@@ -202,7 +198,7 @@ export const Navbar = () => {
               initial={{ y: -50 }}
               animate={{ y: 0 }}
               exit={{ y: -50 }}
-              className="bg-white px-6 py-8 shadow-2xl"
+              className="bg-bg-card px-6 py-8 shadow-2xl"
             >
               <div className="max-w-4xl mx-auto w-full">
                 <div className="flex justify-between items-center mb-6">
@@ -247,7 +243,19 @@ export const Navbar = () => {
                           <div>
                             <p className="text-[8px] uppercase tracking-widest opacity-40 text-amber-900 font-bold">{product.category}</p>
                             <h4 className="text-sm font-serif text-amber-950 group-hover:text-amber-800 transition-colors truncate">{product.name}</h4>
-                            <p className="text-sm text-amber-950 font-medium mt-1">₹{product.price.toLocaleString()}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-sm text-amber-950 font-medium">₹{product.price.toLocaleString()}</p>
+                              {(product.discount || (product.offerRel && product.offerRel.discount)) && (
+                                <>
+                                  <p className="text-[10px] text-amber-900/40 line-through">
+                                    ₹{(product.originalPrice || Math.round(product.price / (1 - (Math.max(product.discount || 0, product.offerRel?.discount || 0) / 100)))).toLocaleString()}
+                                  </p>
+                                  <span className="text-[8px] text-red-600 font-bold">
+                                    {Math.max(product.discount || 0, product.offerRel?.discount || 0)}% OFF
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </Link>
                       </motion.div>

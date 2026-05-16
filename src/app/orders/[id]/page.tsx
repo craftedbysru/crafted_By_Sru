@@ -16,7 +16,7 @@ export default function OrderSuccessPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`/api/orders?orderId=${id}`);
+        const res = await fetch(`/api/orders?id=${id}`);
         if (res.ok) {
           const data = await res.json();
           // Find the specific order in the list (or update API to fetch single order)
@@ -37,7 +37,7 @@ export default function OrderSuccessPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-bg-primary">
         <div className="text-[10px] uppercase tracking-[0.5em] animate-pulse text-amber-900">Confirming your order...</div>
       </div>
     );
@@ -45,7 +45,7 @@ export default function OrderSuccessPage() {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-primary p-6 text-center">
         <h1 className="font-serif text-4xl text-amber-950 mb-4">Order Not Found</h1>
         <p className="text-amber-900/60 mb-8">We couldn't find the order you're looking for.</p>
         <Link href="/catalog" className="px-8 py-4 bg-amber-950 text-white text-[10px] uppercase tracking-widest font-bold">
@@ -56,20 +56,20 @@ export default function OrderSuccessPage() {
   }
 
   return (
-    <div className="min-h-screen pt-32 pb-20 px-6 bg-amber-50/30">
+    <div className="min-h-screen pt-32 pb-20 px-6 bg-bg-primary">
       <div className="max-w-3xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-8 md:p-16 border border-amber-900/10 shadow-sm space-y-12"
+          className="bg-bg-card p-8 md:p-16 border border-border-subtle shadow-sm space-y-12"
         >
           <div className="text-center space-y-4">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-50 text-green-600 rounded-full mb-4">
               <CheckCircle2 size={40} />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl text-amber-950">Thank you for your order</h1>
+            <h1 className="font-serif text-4xl md:text-5xl text-amber-950">Order Placed Successfully</h1>
             <p className="text-amber-900/60 max-w-md mx-auto">
-              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been placed successfully and is being processed by our heritage team.
+              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been placed successfully. Our team is preparing your return gifts with the utmost tradition and care.
             </p>
           </div>
 
@@ -108,7 +108,9 @@ export default function OrderSuccessPage() {
               </div>
               <div className="space-y-4">
                 <div className="text-xs text-amber-900/60 leading-relaxed">
-                  <p className="font-medium text-amber-950 mb-1">{order.shippingAddress?.name || order.customer?.name}</p>
+                  <p className="font-medium text-amber-950 mb-1">
+                    {order.shippingAddress?.firstName ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName || ""}`.trim() : (order.shippingAddress?.name || order.customer?.name || "Guest")}
+                  </p>
                   <p>{order.shippingAddress?.street}</p>
                   <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}</p>
                   <p>{order.shippingAddress?.country}</p>
@@ -116,9 +118,24 @@ export default function OrderSuccessPage() {
                 </div>
                 <div className="bg-amber-50 p-4 rounded-lg">
                   <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Status & Delivery</p>
-                  <p className="text-xs text-amber-950 font-medium">{order.deliveryType || "Express Gift Delivery"}</p>
-                  <p className="text-[10px] text-amber-900/40 mt-1 uppercase">10-15 Business Days</p>
+                  <p className="text-xs text-amber-950 font-medium tracking-wide">
+                    {order.status === "PENDING" ? "Order Received" : order.status}
+                  </p>
+                  <p className="text-[10px] text-amber-900/40 mt-1 uppercase tracking-wider">{order.deliveryType || "Express Gift Delivery"}</p>
                 </div>
+
+                {order.transactions && order.transactions.length > 0 && (
+                  <div className="bg-bg-primary border border-border-subtle p-4 rounded-lg space-y-4">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Razorpay Order ID</p>
+                      <p className="text-[10px] font-mono text-amber-950 truncate">{order.transactions[0].providerOrderId || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Payment ID</p>
+                      <p className="text-[10px] font-mono text-amber-950 truncate">{order.transactions[0].providerPaymentId || "N/A"}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -13,6 +13,7 @@ const verifyPaymentSchema = z.object({
   orderData: z.object({
     items: z.array(z.any()),
     total: z.number().positive(),
+    currency: z.string().optional(),
     shippingAddress: z.any(),
     packagingDetails: z.string().optional(),
     deliveryType: z.string().optional(),
@@ -75,21 +76,16 @@ export async function POST(request: Request) {
           });
         }
 
-        // 3. Create the order and the associated transaction
-        const order = await tx.order.create({
+        // 3. Update the existing order and the associated transaction
+        const order = await tx.order.update({
+          where: { id: razorpayOrder.receipt as string },
           data: {
-            customerId: userId,
-            items: orderData.items,
-            total: orderData.total,
-            status: "Processing",
+            status: "PROCESSING",
             paymentStatus: "paid",
-            shippingAddress: orderData.shippingAddress,
-            phone: orderData.shippingAddress.phone || null,
-            packagingDetails: orderData.packagingDetails,
-            deliveryType: orderData.deliveryType,
             transactions: {
               create: {
                 amount: orderData.total,
+                currency: orderData.currency || "INR",
                 status: "success",
                 provider: "razorpay",
                 providerPaymentId: razorpay_payment_id,
@@ -125,16 +121,17 @@ export async function POST(request: Request) {
 
           // Save address if user has none
           if (user.addresses.length === 0 && orderData.shippingAddress) {
+            const addr = orderData.shippingAddress;
             await tx.address.create({
               data: {
                 userId: userId,
-                name: orderData.shippingAddress.name || user.name,
-                phone: orderData.shippingAddress.phone || user.phone,
-                street: orderData.shippingAddress.street || orderData.shippingAddress.addressLine1 || "",
-                city: orderData.shippingAddress.city || "",
-                state: orderData.shippingAddress.state || "",
-                zipCode: orderData.shippingAddress.zipCode || orderData.shippingAddress.pincode || "",
-                country: orderData.shippingAddress.country || "India"
+                street: addr.street || addr.addressLine1 || "",
+                street2: addr.street2 || addr.addressLine2 || null,
+                street3: addr.street3 || null,
+                city: addr.city || "",
+                state: addr.state || "",
+                zipCode: addr.postalCode || addr.zipCode || addr.pincode || "",
+                country: addr.country || "India"
               }
             });
           }
@@ -143,19 +140,17 @@ export async function POST(request: Request) {
         return order;
       });
 
-      // 5. Send confirmation email (outside transaction)
-      try {
-        await sendOrderConfirmationEmail(
-          orderData.shippingAddress.email || session.user?.email || "",
-          result.id,
-          result.total,
-          orderData.items,
-          orderData.shippingAddress
-        );
-      } catch (err) {
-        console.error("Failed to send confirmation email:", err);
-        // Don't fail the order if email fails
-      }
+      // 5. Send confirmation email (outside transaction, non-blocking)
+      sendOrderConfirmationEmail(
+        orderData.shippingAddress.email || session.user?.email || "",
+        result.id,
+        result.total,
+        orderData.items,
+        orderData.shippingAddress,
+        orderData.currency || "INR"
+      ).catch(err => {
+        console.error("Async confirmation email failed:", err);
+      });
 
       return NextResponse.json({ success: true, orderId: result.id });
     } else {

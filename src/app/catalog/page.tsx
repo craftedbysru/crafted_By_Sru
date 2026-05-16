@@ -27,9 +27,11 @@ function CatalogContent() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
+  const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [selectedOffer, setSelectedOffer] = useState<string | null>(searchParams.get("offer"));
   const [sortBy, setSortBy] = useState(initialSort);
 
   useEffect(() => {
@@ -43,6 +45,12 @@ function CatalogContent() {
       setSortBy(initialSort);
     }
   }, [initialSort]);
+  useEffect(() => {
+    if (searchParams.get("offer")) {
+      setSelectedOffer(searchParams.get("offer"));
+    }
+  }, [searchParams]);
+
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -60,21 +68,25 @@ function CatalogContent() {
           // can complete and we ensure we have the latest data/state.
         }
 
-        const [productsRes, categoriesRes] = await Promise.all([
+        const [productsRes, categoriesRes, offersRes] = await Promise.all([
           fetch("/api/inventory"),
-          fetch("/api/categories")
+          fetch("/api/categories"),
+          fetch("/api/offers")
         ]);
 
-        if (!productsRes.ok || !categoriesRes.ok) throw new Error("Connection failed");
+        if (!productsRes.ok || !categoriesRes.ok || !offersRes.ok) throw new Error("Connection failed");
 
         const productsData = await productsRes.json();
         const categoriesData = await categoriesRes.json();
+        const offersData = await offersRes.json();
 
         const prodList = Array.isArray(productsData) ? productsData : [];
         const catList = Array.isArray(categoriesData) ? ["All", ...categoriesData.map((c: any) => c.name)] : ["All"];
+        const offerList = Array.isArray(offersData) ? offersData : [];
 
         setProducts(prodList);
         setCategories(catList);
+        setOffers(offerList);
         
         localStorage.setItem("sru_catalog_products", JSON.stringify(prodList));
         localStorage.setItem("sru_catalog_categories", JSON.stringify(catList));
@@ -115,6 +127,11 @@ function CatalogContent() {
       result = result.filter(p => (p.categoryRel?.name || p.category) === selectedCategory);
     }
 
+    // Offer filter
+    if (selectedOffer) {
+      result = result.filter(p => p.offerId === selectedOffer);
+    }
+
     // Price range filter
     result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
@@ -128,13 +145,13 @@ function CatalogContent() {
     });
 
     return result;
-  }, [products, searchQuery, selectedCategory, sortBy, priceRange]);
+  }, [products, searchQuery, selectedCategory, sortBy, priceRange, selectedOffer]);
 
   const addToCart = (product: any) => {
     const cart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
     const existingIdx = cart.findIndex((i: any) => i.id === product.id);
-    if (existingIdx > -1) cart[existingIdx].quantity += 25;
-    else cart.push({ ...product, quantity: 25 });
+    if (existingIdx > -1) cart[existingIdx].quantity += 1;
+    else cart.push({ ...product, quantity: 1 });
     localStorage.setItem("sru_cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("sru_cart_change"));
     toast.success(`${product.name} added to cart`);
@@ -159,24 +176,57 @@ function CatalogContent() {
           </div>
         </div>
         
-        <div className="flex flex-col gap-8 pb-8 border-b border-amber-900/5">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-wrap gap-2 mr-Auto">
-              {categories.map(cat => (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap gap-2 mr-Auto">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={cn(
+                      "px-6 py-2.5 rounded-full text-[9px] uppercase tracking-widest font-black transition-all border",
+                      selectedCategory === cat 
+                        ? "bg-amber-950 text-white border-amber-950 shadow-lg shadow-amber-950/10" 
+                        : "bg-white text-amber-900/40 border-amber-900/10 hover:border-amber-900/30"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {offers.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <p className="w-full text-[8px] uppercase tracking-[0.2em] font-bold text-amber-900/30 mb-1">Active Collections & Offers</p>
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => setSelectedOffer(null)}
                   className={cn(
-                    "px-6 py-2.5 rounded-full text-[9px] uppercase tracking-widest font-black transition-all border",
-                    selectedCategory === cat 
-                      ? "bg-amber-950 text-white border-amber-950 shadow-lg shadow-amber-950/10" 
+                    "px-4 py-2 rounded-full text-[8px] uppercase tracking-widest font-black transition-all border",
+                    !selectedOffer 
+                      ? "bg-amber-100 text-amber-950 border-amber-200" 
                       : "bg-white text-amber-900/40 border-amber-900/10 hover:border-amber-900/30"
                   )}
                 >
-                  {cat}
+                  All Offers
                 </button>
-              ))}
-            </div>
+                {offers.map(offer => (
+                  <button
+                    key={offer.id}
+                    onClick={() => setSelectedOffer(offer.id)}
+                    className={cn(
+                      "px-4 py-2 rounded-full text-[8px] uppercase tracking-widest font-black transition-all border",
+                      selectedOffer === offer.id 
+                        ? "bg-amber-950 text-white border-amber-950" 
+                        : "bg-amber-50 text-amber-900/60 border-amber-900/10 hover:border-amber-900/30"
+                    )}
+                  >
+                    {offer.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
                <button 
@@ -239,6 +289,7 @@ function CatalogContent() {
                       onClick={() => {
                         setPriceRange([0, 5000]);
                         setSelectedCategory("All");
+                        setSelectedOffer(null);
                         setSearchQuery("");
                       }}
                       className="text-[10px] uppercase tracking-widest font-bold text-amber-950 bg-amber-100/50 hover:bg-amber-100 px-6 py-2.5 transition-colors"
@@ -250,8 +301,6 @@ function CatalogContent() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
 
       {processedProducts.length === 0 ? (
         <div className="py-40 text-center">
@@ -295,7 +344,27 @@ function CatalogContent() {
                           </h3>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-medium text-amber-950 tracking-tight">₹{product.price.toLocaleString()}</p>
+                          {(product.discount || (product.offerRel && product.offerRel.discount)) && (
+                            <div className="flex flex-col items-end gap-1 mb-2">
+                                <span className="inline-block px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-bold uppercase tracking-widest">
+                                    {Math.max(product.discount || 0, product.offerRel?.discount || 0)}% OFF
+                                </span>
+                                {product.offerRel && (
+                                    <span className="text-[7px] text-amber-900/60 font-bold uppercase tracking-tighter">
+                                        {product.offerRel.name}
+                                    </span>
+                                )}
+                            </div>
+                          )}
+                          {(product.originalPrice || product.discount || (product.offerRel && product.offerRel.discount)) && (
+                            <p className="text-xs text-amber-900/40 line-through">
+                                ₹{(product.originalPrice || Math.round(product.price / (1 - (Math.max(product.discount || 0, product.offerRel?.discount || 0) / 100)))).toLocaleString()}
+                            </p>
+                          )}
+                          <p className={cn(
+                            "text-2xl font-medium tracking-tight",
+                            (product.originalPrice || product.discount || (product.offerRel && product.offerRel.discount)) ? "text-red-700" : "text-amber-950"
+                          )}>₹{product.price.toLocaleString()}</p>
                           <p className="text-[8px] uppercase tracking-widest text-amber-900/40 font-bold">Inc. Taxes</p>
                         </div>
                       </div>

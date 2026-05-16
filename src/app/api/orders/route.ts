@@ -20,13 +20,15 @@ export async function GET(req: Request) {
         where: { id: orderId },
         include: {
           customer: {
-            select: { name: true, email: true },
-          }
+            select: { name: true, email: true, addresses: true },
+          },
+          transactions: true,
         },
       });
       if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
       return NextResponse.json(order);
     } catch (error) {
+      console.error("Single order fetch error:", error);
       return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
   }

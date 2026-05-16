@@ -6,32 +6,75 @@
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
   --font-serif-alt: var(--font-serif-alt);
+  
+  --color-amber-950: var(--amber-950);
+  --color-amber-900: var(--amber-900);
+  --color-amber-800: var(--amber-800);
+  --color-amber-700: var(--amber-700);
+  --color-amber-600: var(--amber-600);
+  --color-amber-500: var(--amber-500);
+  --color-amber-400: var(--amber-400);
+  --color-amber-300: var(--amber-300);
+  --color-amber-200: var(--amber-200);
+  --color-amber-100: var(--amber-100);
+  --color-amber-50: var(--amber-50);
+  
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-card: var(--bg-card);
+  --color-border-subtle: var(--border-subtle);
 }
 
-@layer base {
-  body {
-    @apply font-sans bg-[#f9f7f2] text-amber-950 antialiased;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-amber-950;
-  }
+:root {
+  --amber-950: #451a03; 
+  --amber-900: #78350f; 
+  --amber-800: #92400e; 
+  --amber-700: #b45309; 
+  --amber-600: #d97706;
+  --amber-500: #f59e0b;
+  --amber-400: #fbbf24;
+  --amber-300: #fcd34d;
+  --amber-200: #fde68a;
+  --amber-100: #fef3c7; 
+  --amber-50: #fffbeb;  
+  --bg-primary: #f9f7f2;
+  --bg-card: #ffffff;
+  --border-subtle: rgba(120, 53, 15, 0.1);
 }
 
-@layer components {
-  .btn-primary {
-    @apply px-8 py-4 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all duration-300 shadow-sm;
-  }
-  
-  .btn-outline {
-    @apply px-8 py-4 border border-amber-950/30 text-amber-950 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-50 transition-all duration-300;
-  }
-  
-  .input-field {
-    @apply w-full bg-white border border-amber-900/20 px-4 py-3 text-sm focus:outline-none focus:border-amber-700 transition-colors text-amber-950 shadow-inner;
-  }
+body {
+  background-color: var(--bg-primary);
+  color: var(--amber-950);
+  @apply font-sans antialiased transition-all duration-500;
+}
 
-  .section-secondary {
-    @apply bg-amber-100/30 border-y border-amber-900/5;
-  }
+h1, h2, h3, h4, h5, h6 {
+  color: var(--amber-950);
+  @apply font-serif tracking-tight transition-colors duration-500;
+}
+
+.bg-card-themed {
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+  @apply border transition-all duration-500;
+}
+
+.btn-primary {
+  @apply px-8 py-4 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all duration-300 shadow-sm;
+}
+
+.btn-outline {
+  @apply px-8 py-4 border border-amber-950/30 text-amber-950 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-50 transition-all duration-300;
+}
+
+.input-field {
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+  color: var(--amber-950);
+  @apply w-full px-4 py-3 text-sm focus:outline-none focus:border-amber-700 transition-colors shadow-inner border;
+}
+
+.section-secondary {
+  border-color: var(--border-subtle);
+  background-color: rgba(254, 243, 199, 0.3); /* Based on amber-100 */
+  @apply border-y;
 }

@@ -33,11 +33,12 @@ export async function sendWelcomeEmail(email: string, name: string) {
   return sendEmail({ to: email, subject, html, type: "WELCOME" });
 }
 
-export async function sendOrderConfirmationEmail(email: string, orderId: string, total: number, items: any[], address: any) {
+export async function sendOrderConfirmationEmail(email: string, orderId: string, total: number, items: any[], address: any, currency: string = "INR") {
+  const symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "₹";
   const tableRows = items.map(item => `
     <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
       <span>${item.name} x ${item.quantity}</span>
-      <span>₹${(item.price * item.quantity).toLocaleString()}</span>
+      <span>${symbol}${((item.priceInSelectedCurrency || item.price) * item.quantity).toLocaleString()}</span>
     </div>
   `).join('');
   
@@ -45,10 +46,11 @@ export async function sendOrderConfirmationEmail(email: string, orderId: string,
     orderId: orderId.toUpperCase(), 
     total: total.toLocaleString(),
     userName: address.firstName || 'Patron',
-    itemsTable: tableRows
+    itemsTable: tableRows,
+    currencySymbol: symbol
   });
   
-  const { subject, html } = dynamic || (EMAIL_TEMPLATES as any).orderConfirmation(orderId, total, items, address);
+  const { subject, html } = dynamic || (EMAIL_TEMPLATES as any).orderConfirmation(orderId, total, items, address, currency);
   return sendEmail({ to: email, subject, html, type: "ORDER_CONFIRMATION" });
 }
 

@@ -23,11 +23,13 @@ export default function AccountPage() {
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [addressToEdit, setAddressToEdit] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     name: "",
     phone: "",
     street: "",
     street2: "",
+    street3: "",
     city: "",
     state: "",
     zipCode: "",
@@ -125,23 +127,43 @@ export default function AccountPage() {
       return;
     }
     try {
-      const response = await fetch("/api/address", {
-        method: "POST",
+      const method = addressToEdit ? "PUT" : "POST";
+      const url = addressToEdit ? `/api/address/${addressToEdit}` : "/api/address";
+      
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newAddress),
       });
 
       if (response.ok) {
-        toast.success("Address added successfully");
+        toast.success(addressToEdit ? "Address updated successfully" : "Address added successfully");
         setIsAddressModalOpen(false);
-        setNewAddress({ name: "", phone: "", street: "", street2: "", city: "", state: "", zipCode: "", country: "India" });
+        setAddressToEdit(null);
+        setNewAddress({ name: "", phone: "", street: "", street2: "", street3: "", city: "", state: "", zipCode: "", country: "India" });
         fetchData();
       } else {
-        toast.error("Failed to add address");
+        toast.error("Failed to save address");
       }
     } catch (error) {
       toast.error("An error occurred");
     }
+  };
+
+  const handleEditAddress = (address: any) => {
+    setAddressToEdit(address.id);
+    setNewAddress({
+      name: address.name || "",
+      phone: address.phone || "",
+      street: address.street || "",
+      street2: address.street2 || "",
+      street3: address.street3 || "",
+      city: address.city || "",
+      state: address.state || "",
+      zipCode: address.zipCode || "",
+      country: address.country || "India"
+    });
+    setIsAddressModalOpen(true);
   };
 
   const handleDeleteAddress = async (id: string) => {
@@ -202,7 +224,7 @@ export default function AccountPage() {
     <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
         <div className="lg:col-span-1 space-y-12">
-          <div className="flex items-center gap-4 p-6 bg-white border border-amber-900/10 shadow-sm">
+          <div className="flex items-center gap-4 p-6 bg-bg-card border border-border-subtle shadow-sm">
             <div className="w-16 h-16 bg-amber-950 rounded-full flex items-center justify-center text-white border border-amber-900/10">
               <User size={32} />
             </div>
@@ -212,14 +234,19 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <nav className="flex flex-col gap-2 bg-white border border-amber-900/10 shadow-sm overflow-hidden">
+          <nav className="flex flex-col gap-2 bg-bg-card border border-border-subtle shadow-sm overflow-hidden">
             <button 
               onClick={() => setActiveTab("orders")}
-              className={`flex items-center justify-between p-6 text-[10px] uppercase tracking-widest font-bold transition-colors ${
+              className={`flex items-center justify-between p-6 text-[10px] uppercase tracking-widest font-bold transition-colors relative ${
                 activeTab === "orders" ? "bg-amber-950 text-white" : "text-amber-900/60 hover:bg-amber-50"
               }`}
             >
-              Order History
+              <div className="flex items-center gap-2">
+                Order History
+                {orders.some(o => o.status?.toLowerCase() === "pending") && (
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                )}
+              </div>
               <ChevronRight size={14} />
             </button>
             <button 
@@ -283,7 +310,7 @@ export default function AccountPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="border border-amber-900/10 p-8 hover:bg-amber-50/30 transition-colors"
                       >
-                        <div className="flex flex-col md:flex-row justify-between gap-6 mb-8 pb-8 border-b border-amber-900/10">
+                        <div className="flex flex-col md:flex-row justify-between gap-6 mb-8 pb-8 border-b border-border-subtle">
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Order Number</p>
                             <p className="text-sm font-medium text-amber-950">#{order.id.slice(-8).toUpperCase()}</p>
@@ -294,9 +321,18 @@ export default function AccountPage() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Status</p>
-                            <span className="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-[10px] uppercase tracking-widest font-bold">
-                              {order.status}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block px-3 py-1 text-[10px] uppercase tracking-widest font-bold rounded-sm ${
+                                order.status === 'DELIVERED' ? 'bg-green-50 text-green-600' : 
+                                order.status === 'CANCELLED' || order.paymentStatus === 'failed' || order.status === 'FAILED' ? 'bg-red-50 text-red-600' : 
+                                'bg-amber-100 text-amber-900'
+                              }`}>
+                                {order.paymentStatus === 'failed' ? 'FAILED' : (order.status === 'PENDING' ? 'Received' : order.status)}
+                              </span>
+                              {order.status === 'PENDING' && order.paymentStatus !== 'failed' && (
+                                <span className="text-[8px] text-amber-900/40 animate-pulse italic">Processing soon</span>
+                              )}
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Total Amount</p>
@@ -357,7 +393,11 @@ export default function AccountPage() {
                 <div className="flex justify-between items-center mb-12">
                   <h2 className="font-serif text-4xl text-amber-950">Your Addresses</h2>
                   <button 
-                    onClick={() => setIsAddressModalOpen(true)}
+                    onClick={() => {
+                      setAddressToEdit(null);
+                      setNewAddress({ name: "", phone: "", street: "", street2: "", street3: "", city: "", state: "", zipCode: "", country: "India" });
+                      setIsAddressModalOpen(true);
+                    }}
                     className="px-6 py-3 bg-amber-950 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-amber-900 transition-all"
                   >
                     Add New Address
@@ -377,16 +417,25 @@ export default function AccountPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {addresses.map((address) => (
-                      <div key={address.id} className="border border-amber-900/10 p-8 bg-white relative group">
-                        <button 
-                          onClick={() => handleDeleteAddress(address.id)}
-                          className="absolute top-4 right-4 text-amber-900/20 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <div key={address.id} className="border border-border-subtle p-8 bg-bg-card relative group">
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          <button 
+                            onClick={() => handleEditAddress(address)}
+                            className="text-amber-900/20 hover:text-amber-600 transition-colors"
+                          >
+                            <User size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteAddress(address.id)}
+                            className="text-amber-900/20 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                         <p className="text-sm text-amber-950 mb-1 font-bold">{address.name} ({address.phone})</p>
                         <p className="text-sm text-amber-950 mb-1">{address.street}</p>
                         {address.street2 && <p className="text-sm text-amber-950 mb-1">{address.street2}</p>}
+                        {address.street3 && <p className="text-sm text-amber-950 mb-1">{address.street3}</p>}
                         <p className="text-sm text-amber-950 mb-1">{address.city}, {address.state} {address.zipCode}</p>
                         <p className="text-sm text-amber-950">{address.country}</p>
                       </div>
@@ -403,7 +452,7 @@ export default function AccountPage() {
                 className="max-w-2xl"
               >
                 <h2 className="font-serif text-4xl text-amber-950 mb-12">Your Profile</h2>
-                <div className="bg-white border border-amber-900/10 p-10 shadow-sm">
+                <div className="bg-bg-card border border-border-subtle p-10 shadow-sm">
                   <form onSubmit={handleUpdateProfile} className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
@@ -482,37 +531,18 @@ export default function AccountPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-md bg-white p-12 shadow-2xl"
             >
-              <h3 className="font-serif text-2xl text-amber-950 mb-8">Add New Address</h3>
+              <h3 className="font-serif text-2xl text-amber-950 mb-8">{addressToEdit ? "Edit Address" : "Add New Address"}</h3>
               <form onSubmit={handleAddAddress} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Full Name</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={newAddress.name}
-                      onChange={(e) => setNewAddress({...newAddress, name: e.target.value})}
-                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                      placeholder="Enter receiver's name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
-                    <input 
-                      required
-                      type="tel" 
-                      maxLength={10}
-                      value={newAddress.phone}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setNewAddress({...newAddress, phone: val});
-                      }}
-                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                      placeholder="10-digit number"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Apartment, suite, etc. (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={newAddress.street2}
+                      onChange={(e) => setNewAddress({...newAddress, street2: e.target.value})}
+                      className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Street Address</label>
                     <input 
@@ -524,15 +554,16 @@ export default function AccountPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Apartment, suite, etc. (Optional)</label>
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Landmark / Extra Directions (Optional)</label>
                     <input 
                       type="text" 
-                      value={newAddress.street2}
-                      onChange={(e) => setNewAddress({...newAddress, street2: e.target.value})}
+                      value={newAddress.street3}
+                      onChange={(e) => setNewAddress({...newAddress, street3: e.target.value})}
                       className="w-full bg-transparent border-b border-amber-900/20 py-2 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
                     />
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">City / District</label>
