@@ -104,7 +104,7 @@ export const Navbar = () => {
   return (
     <>
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-6 flex items-center justify-between bg-white border-b border-amber-900/10 shadow-sm",
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-6 flex items-center justify-between bg-[#f9f7f2] border-b border-amber-900/10 shadow-sm",
       isScrolled ? "py-3" : "py-4"
     )}>
       <Link href="/" className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export const Navbar = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="absolute top-full left-0 right-0 bg-bg-card border-b border-border-subtle p-6 md:hidden flex flex-col gap-4 overflow-hidden"
+              className="absolute top-full left-0 right-0 bg-[#f9f7f2] border-b border-border-subtle p-6 md:hidden flex flex-col gap-4 overflow-hidden"
             >
               {userRole === "merchant" ? (
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900 font-bold">Dashboard</Link>
@@ -198,7 +198,7 @@ export const Navbar = () => {
               initial={{ y: -50 }}
               animate={{ y: 0 }}
               exit={{ y: -50 }}
-              className="bg-bg-card px-6 py-8 shadow-2xl"
+              className="bg-[#f9f7f2] px-6 py-8 shadow-2xl"
             >
               <div className="max-w-4xl mx-auto w-full">
                 <div className="flex justify-between items-center mb-6">
