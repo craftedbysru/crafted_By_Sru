@@ -82,22 +82,23 @@ export async function POST(request: Request) {
           data: {
             status: "PROCESSING",
             paymentStatus: "paid",
-            transactions: {
-              create: {
-                amount: orderData.total,
-                currency: orderData.currency || "INR",
-                status: "success",
-                provider: "razorpay",
-                providerPaymentId: razorpay_payment_id,
-                providerOrderId: razorpay_order_id,
-                metadata: {
-                  razorpay_signature,
-                  userAgent: request.headers.get("user-agent"),
-                  ip: request.headers.get("x-forwarded-for"),
-                }
-              }
-            }
           },
+        });
+
+        await tx.transaction.updateMany({
+          where: { 
+            orderId: razorpayOrder.receipt as string,
+            providerOrderId: razorpay_order_id,
+          },
+          data: {
+            status: "success",
+            providerPaymentId: razorpay_payment_id,
+            metadata: {
+              razorpay_signature,
+              userAgent: request.headers.get("user-agent"),
+              ip: request.headers.get("x-forwarded-for"),
+            }
+          }
         });
 
         // 4. Auto-save phone and address to user profile if needed

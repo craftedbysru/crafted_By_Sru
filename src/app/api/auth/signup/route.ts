@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail } from "@/lib/email-server";
+import { sendOtpEmail } from "@/lib/email-server";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -40,28 +40,51 @@ export async function POST(req: Request) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user
-    const user = await prisma.user.create({
+    // Prepare credentials payload to secure inside VerificationToken
+    const payload = Buffer.from(
+      JSON.stringify({ name, email, password: hashedPassword, firstName, lastName, phone })
+    ).toString("base64");
+
+    const identifier = `otp_signup:${email}:${payload}`;
+
+    // Cryptographical random-like 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Clear previous pending verification tokens for this email to avoid stale entries
+    await prisma.verificationToken.deleteMany({
+      where: {
+        identifier: {
+          startsWith: `otp_signup:${email}:`
+        }
+      }
+    });
+
+    // Create verification token
+    await prisma.verificationToken.create({
       data: {
-        name,
-        firstName,
-        lastName,
-        phone,
-        email,
-        password: hashedPassword,
-        role: "client", // Default role for new signups
+        identifier,
+        token: otp,
+        expires: new Date(Date.now() + 10 * 60 * 1000), // Valid for 10 minutes
       },
     });
 
-    // Send the welcome email
-    await sendWelcomeEmail(email, name);
+    // Send the Verification OTP email
+    console.log(`[SIGNUP] Sending OTP ${otp} to ${email}`);
+    await sendOtpEmail(email, otp);
 
     return NextResponse.json(
-      { message: "User created successfully", user: { id: user.id, email: user.email, name: user.name } },
-      { status: 201 }
+      { success: true, otpRequired: true, email, message: "Verification OTP sent to your email." },
+      { status: 200 }
     );
   } catch (error: any) {
     console.error("Signup error:", error);
+    if (error instanceof z.ZodError) {
+      const issues = (error as any).issues || (error as any).errors || [];
+      return NextResponse.json(
+        { error: issues[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

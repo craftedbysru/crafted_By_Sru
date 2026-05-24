@@ -100,10 +100,10 @@ export default function ProductDetail() {
     toast.success(`${product.name} added to cart`);
   };
 
-  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 25 : 25));
+  const decrementQty = () => setQuantity(prev => (prev > 25 ? prev - 1 : 25));
   const incrementQty = () => {
-    if (quantity + 25 <= product.stock) {
-      setQuantity(prev => prev + 25);
+    if (quantity + 1 <= product.stock) {
+      setQuantity(prev => prev + 1);
     } else {
       toast.warning(`Maximum available stock reached`);
     }

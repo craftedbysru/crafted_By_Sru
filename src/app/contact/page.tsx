@@ -5,9 +5,11 @@ import { motion } from "motion/react";
 import { Send, MapPin, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useCMS } from "@/hooks/useCMS";
+import { countryCodes } from "@/lib/countryCodes";
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
+  const [contactCountryCode, setContactCountryCode] = useState("+91");
   const { content: cmsContent, loading: dataLoading, getSection } = useCMS("contact");
 
   const headerContent = getSection("header", {
@@ -26,10 +28,13 @@ export default function ContactPage() {
     setLoading(true);
     
     const formData = new FormData(e.target as HTMLFormElement);
+    const rawPhone = formData.get("phone") as string;
+    // Strip non-digits from phone input to ensure database conformity, then prepend countryCode
+    const formattedPhone = `${contactCountryCode}${rawPhone.replace(/\D/g, "")}`;
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
-      phone: formData.get("phone"),
+      phone: formattedPhone,
       message: formData.get("message"),
       subject: "General Inquiry"
     };
@@ -135,12 +140,26 @@ export default function ContactPage() {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
-              <input 
-                required
-                name="phone"
-                type="tel" 
-                className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-              />
+              <div className="flex gap-2 border-b border-amber-900/20 py-1 items-center focus-within:border-amber-900 transition-colors">
+                <select
+                  value={contactCountryCode}
+                  onChange={(e) => setContactCountryCode(e.target.value)}
+                  className="bg-transparent text-amber-950 font-bold py-2 focus:outline-none cursor-pointer border-r border-amber-900/10 pr-2 text-xs"
+                >
+                  {countryCodes.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <input 
+                  required
+                  name="phone"
+                  type="tel" 
+                  className="w-full bg-transparent py-2 focus:outline-none text-amber-950 text-sm"
+                  placeholder="Enter mobile number"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Message</label>

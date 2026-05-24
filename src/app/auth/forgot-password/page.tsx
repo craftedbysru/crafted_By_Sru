@@ -52,12 +52,6 @@ export default function ForgotPasswordPage() {
             <p className="text-sm text-amber-900/60 leading-relaxed">
               If an account is associated with <strong>{email}</strong>, we have sent a secure link to reset your password. Please check your inbox.
             </p>
-            <button 
-              onClick={() => setSubmitted(false)}
-              className="w-full py-4 text-[10px] uppercase tracking-widest font-bold text-amber-900 border border-amber-900/20 hover:bg-amber-50 transition-all"
-            >
-              Try another email
-            </button>
           </div>
         ) : (
           <>

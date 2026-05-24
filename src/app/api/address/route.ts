@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const addressSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
-  phone: z.string().min(10, "Valid phone number is required").max(15).regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"),
+  phone: z.string().min(10, "Valid phone number is required").max(20).regex(/^\+?\d{10,15}$/, "Please enter a valid mobile number with country code"),
   street: z.string().min(1, "Street is required").max(200),
   street2: z.string().max(200).optional().or(z.literal("")),
   street3: z.string().max(200).optional().or(z.literal("")),

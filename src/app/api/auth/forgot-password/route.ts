@@ -31,8 +31,13 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send email
-    await sendPasswordResetEmail(email, resetToken);
+    // Get dynamic origin from request URL/headers to guarantee working forgot password links under proxies
+    const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+    const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const origin = forwardedProto && forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(req.url).origin;
+
+    // Send email with dynamic origin
+    await sendPasswordResetEmail(email, resetToken, origin);
 
     return NextResponse.json({ message: "If an account exists with this email, a reset link has been sent." });
   } catch (error: any) {

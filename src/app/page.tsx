@@ -300,6 +300,10 @@ export default function Home() {
         
         if (offerProducts.length === 0) return null;
 
+        // Calculate maximum discount percentage among all items in this offer
+        const discounts = offerProducts.map(p => Math.max(p.discount || 0, offer.discount || 0)).filter(d => d > 0);
+        const maxDiscount = discounts.length > 0 ? Math.max(...discounts) : (offer.discount || 0);
+
         return (
           <section key={offer.id} className="py-24 bg-amber-950 text-white overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
@@ -307,9 +311,9 @@ export default function Home() {
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                      <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60 font-bold">Special Offer</p>
-                     {(offer.discount || offerProducts[0]?.discount) && (
-                       <span className="px-2 py-1 bg-amber-200 text-amber-950 text-[10px] font-bold">
-                         {offer.discount || offerProducts[0]?.discount}% OFF
+                     {maxDiscount > 0 && (
+                       <span className="px-2 py-1 bg-amber-200 text-amber-950 text-[10px] font-bold uppercase tracking-wider">
+                         UPTO {maxDiscount}% OFF
                        </span>
                      )}
                   </div>

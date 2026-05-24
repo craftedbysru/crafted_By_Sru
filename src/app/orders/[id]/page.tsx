@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { CheckCircle2, Package, Truck, ArrowLeft, ShoppingBag } from "lucide-react";
+import { CheckCircle2, Package, Truck, ArrowLeft, ShoppingBag, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -11,29 +11,54 @@ export default function OrderSuccessPage() {
   const { id } = useParams();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const res = await fetch(`/api/orders?id=${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          // Find the specific order in the list (or update API to fetch single order)
-          const foundOrder = Array.isArray(data) ? data.find((o: any) => o.id === id) : data;
-          setOrder(foundOrder);
-        } else {
-          toast.error("Failed to load order details");
-        }
-      } catch (error) {
-        console.error("Error fetching order:", error);
-      } finally {
-        setLoading(false);
+  const fetchOrder = async () => {
+    try {
+      const res = await fetch(`/api/orders?id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Find the specific order in the list (or update API to fetch single order)
+        const foundOrder = Array.isArray(data) ? data.find((o: any) => o.id === id) : data;
+        setOrder(foundOrder);
+      } else {
+        toast.error("Failed to load order details");
       }
-    };
+    } catch (error) {
+      console.error("Error fetching order:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (id) fetchOrder();
   }, [id]);
+
+  const handleSyncPayment = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/payment/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        await fetchOrder();
+      } else {
+        toast.error("Failed to synchronize payment details from payment gateway.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting with the sync service.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -67,9 +92,9 @@ export default function OrderSuccessPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-50 text-green-600 rounded-full mb-4">
               <CheckCircle2 size={40} />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl text-amber-950">Order Placed Successfully</h1>
-            <p className="text-amber-900/60 max-w-md mx-auto">
-              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been placed successfully. Our team is preparing your return gifts with the utmost tradition and care.
+            <h1 className="font-serif text-4xl md:text-5xl text-amber-950 font-normal">Order Successful</h1>
+            <p className="text-amber-900/60 max-w-md mx-auto text-sm leading-relaxed">
+              Your order <span className="font-bold text-amber-950">#{order.id.slice(-8).toUpperCase()}</span> has been processed successfully. We are preparing your return gifts with the utmost tradition and care.
             </p>
           </div>
 
@@ -126,14 +151,34 @@ export default function OrderSuccessPage() {
 
                 {order.transactions && order.transactions.length > 0 && (
                   <div className="bg-bg-primary border border-border-subtle p-4 rounded-lg space-y-4">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Razorpay Order ID</p>
-                      <p className="text-[10px] font-mono text-amber-950 truncate">{order.transactions[0].providerOrderId || "N/A"}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Payment ID</p>
-                      <p className="text-[10px] font-mono text-amber-950 truncate">{order.transactions[0].providerPaymentId || "N/A"}</p>
-                    </div>
+                    {(() => {
+                      const activeTx = order.transactions?.find((t: any) => t.providerPaymentId) || order.transactions?.[0];
+                      const providerOrderId = activeTx?.providerOrderId || order.transactions?.[0]?.providerOrderId || "N/A";
+                      const providerPaymentId = activeTx?.providerPaymentId || "N/A";
+                      return (
+                        <>
+                          <div>
+                            <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Razorpay Order ID</p>
+                            <p className="text-[10px] font-mono text-amber-950 truncate">{providerOrderId}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] uppercase tracking-widest font-bold text-amber-900/40 mb-1">Payment ID</p>
+                            <p className="text-[10px] font-mono text-amber-950 truncate">{providerPaymentId}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                    
+                    {(order.paymentStatus === "unpaid" || order.paymentStatus === "failed") && (
+                      <button
+                        onClick={handleSyncPayment}
+                        disabled={syncing}
+                        className="w-full mt-2 py-2 border border-amber-900/20 text-amber-900 text-[9px] uppercase tracking-wider font-bold rounded hover:bg-amber-50 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <RefreshCw size={10} className={syncing ? "animate-spin" : ""} />
+                        {syncing ? "Checking Gateway..." : "Sync Payment Status"}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -149,7 +194,7 @@ export default function OrderSuccessPage() {
               Continue Shopping
             </Link>
             <Link 
-              href="/dashboard"
+              href="/account"
               className="flex-1 py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all text-center flex items-center justify-center gap-3"
             >
               <ArrowLeft size={14} />

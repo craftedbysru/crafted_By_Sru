@@ -490,6 +490,73 @@ export default function MerchantDashboard() {
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
+
+  const handleSyncPayment = async (orderId: string) => {
+    if (syncingOrderId) return;
+    setSyncingOrderId(orderId);
+    try {
+      const res = await fetch("/api/payment/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        await fetchData();
+
+        if (selectedOrder && selectedOrder.id === orderId) {
+          const freshOrderRes = await fetch(`/api/orders?id=${orderId}`);
+          if (freshOrderRes.ok) {
+            const freshOrders = await freshOrderRes.json();
+            const found = Array.isArray(freshOrders) ? freshOrders.find((o: any) => o.id === orderId) : freshOrders;
+            if (found) setSelectedOrder(found);
+          }
+        }
+      } else {
+        toast.error("Failed to sync payment status.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred during payment sync.");
+    } finally {
+      setSyncingOrderId(null);
+    }
+  };
+
+  const handleCapturePayment = async (orderId: string, paymentId: string, amount: number) => {
+    if (syncingOrderId) return;
+    setSyncingOrderId(orderId);
+    try {
+      const res = await fetch("/api/payment/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, paymentId, amount }),
+      });
+      if (res.ok) {
+        toast.success("Payment successfully captured!");
+        await fetchData();
+
+        if (selectedOrder && selectedOrder.id === orderId) {
+          const freshOrderRes = await fetch(`/api/orders?id=${orderId}`);
+          if (freshOrderRes.ok) {
+            const freshOrders = await freshOrderRes.json();
+            const found = Array.isArray(freshOrders) ? freshOrders.find((o: any) => o.id === orderId) : freshOrders;
+            if (found) setSelectedOrder(found);
+          }
+        }
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to capture payment.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred during payment capture.");
+    } finally {
+      setSyncingOrderId(null);
+    }
+  };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
@@ -718,8 +785,15 @@ export default function MerchantDashboard() {
                 onClick={() => { setActiveSection("shipping"); setIsSidebarOpen(false); }} 
               />
               <SidebarLink 
-                icon={<Clock size={18} />} 
-                label="Inquiries" 
+                icon={
+                  <div className="relative">
+                    <Clock size={18} />
+                    {messages.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                    )}
+                  </div>
+                } 
+                label={`Inquiries (${messages.length})`} 
                 active={activeSection === "messages"} 
                 onClick={() => { setActiveSection("messages"); setIsSidebarOpen(false); }} 
               />
@@ -738,7 +812,11 @@ export default function MerchantDashboard() {
             <span className="text-[8px] uppercase tracking-widest font-bold text-amber-900/40">Heritage Mode</span>
           </div>
           <button 
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => {
+              localStorage.removeItem("sru_cart");
+              window.dispatchEvent(new Event("sru_cart_change"));
+              signOut({ callbackUrl: "/" });
+            }}
             className="flex items-center gap-3 text-amber-900/40 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold w-full"
           >
             <LogOut size={18} />
@@ -768,6 +846,27 @@ export default function MerchantDashboard() {
                   <p className="text-sm font-medium text-amber-950">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
               </header>
+
+              {messages.length > 0 && (
+                <div className="bg-amber-50/50 border border-amber-950/10 p-5 flex items-center justify-between gap-4 animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 font-bold"></span>
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-amber-950 uppercase tracking-widest">New Customer Inquiries Received</p>
+                      <p className="text-[10px] text-amber-900/60 mt-0.5">You have {messages.length} customer inquiry message{messages.length > 1 ? 's' : ''} awaiting response in your inbox.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setActiveSection("messages")}
+                    className="text-[10px] uppercase tracking-widest font-bold text-amber-950 border-b border-amber-950 hover:opacity-75 transition-opacity py-0.5"
+                  >
+                    View Messages
+                  </button>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   <StatCard icon={<DollarSign className="text-green-600" />} label="Total Sales" value={`₹${stats.totalSales.toFixed(2)}`} trend="+12.5%" />
@@ -1846,8 +1945,67 @@ export default function MerchantDashboard() {
                     <h3 className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Payment Details</h3>
                     <div className="space-y-1">
                       <p className="text-xs text-amber-900/60">Status: <span className="font-bold text-amber-950 uppercase">{selectedOrder.paymentStatus}</span></p>
-                      <p className="text-xs text-amber-900/60">Razorpay Order: <span className="text-amber-950">{selectedOrder.transactions?.[0]?.providerOrderId || "N/A"}</span></p>
-                      <p className="text-xs text-amber-900/60">Payment ID: <span className="text-amber-950">{selectedOrder.transactions?.[0]?.providerPaymentId || "N/A"}</span></p>
+                      {(() => {
+                        const activeTx = selectedOrder.transactions?.find((t: any) => t.providerPaymentId) || selectedOrder.transactions?.[0];
+                        const providerOrderId = activeTx?.providerOrderId || selectedOrder.transactions?.[0]?.providerOrderId || "N/A";
+                        const providerPaymentId = activeTx?.providerPaymentId || "N/A";
+                        const isAuthorized = activeTx?.status?.toLowerCase() === "authorized";
+
+                        return (
+                          <>
+                            <p className="text-dashed text-xs text-amber-900/60">Razorpay Order: <span className="text-amber-950 font-mono font-medium">{providerOrderId}</span></p>
+                            <p className="text-dashed text-xs text-amber-900/60">Payment ID: <span className="text-amber-950 font-mono font-medium">{providerPaymentId}</span></p>
+                            
+                            {isAuthorized && (
+                              <div className="mt-3 bg-amber-50/50 p-2 border border-amber-950/20 rounded-sm">
+                                <p className="text-[10px] text-amber-950 font-medium font-sans">Payment Authorized (Requires capture)</p>
+                                <button
+                                  onClick={() => handleCapturePayment(selectedOrder.id, providerPaymentId, selectedOrder.total)}
+                                  disabled={syncingOrderId !== null}
+                                  className="mt-1.5 px-3 py-1 bg-amber-900 hover:bg-amber-950 disabled:opacity-50 text-white rounded text-[9px] uppercase tracking-wider font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 font-sans"
+                                >
+                                  {syncingOrderId === selectedOrder.id ? "Capturing..." : "Capture Payment"}
+                                </button>
+                              </div>
+                            )}
+
+                            {(selectedOrder.paymentStatus === "unpaid" || selectedOrder.paymentStatus === "failed") && (
+                              <div className="mt-3">
+                                <button
+                                  onClick={() => handleSyncPayment(selectedOrder.id)}
+                                  disabled={syncingOrderId !== null}
+                                  className="px-3 py-1 border border-amber-900/20 hover:bg-amber-50 disabled:opacity-50 text-amber-900 rounded text-[9px] uppercase tracking-wider font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 font-sans"
+                                >
+                                  {syncingOrderId === selectedOrder.id ? "Syncing..." : "Sync Gateway Status"}
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                      {(() => {
+                        const failedTx = selectedOrder.transactions?.find((t: any) => t.status?.toLowerCase() === "failed" || t.errorDetails);
+                        if (failedTx && failedTx.errorDetails) {
+                          try {
+                            const errObj = JSON.parse(failedTx.errorDetails);
+                            const desc = errObj.description || errObj.reason || errObj.message || failedTx.errorDetails;
+                            return (
+                              <div className="mt-2 bg-red-50 p-2.5 border border-red-200/50 rounded text-red-900 text-left">
+                                <p className="text-[8px] uppercase font-bold text-red-950/50">Failure Reason</p>
+                                <p className="text-xs font-semibold leading-normal mt-0.5">{desc}</p>
+                              </div>
+                            );
+                          } catch (e) {
+                            return (
+                              <div className="mt-2 bg-red-50 p-2.5 border border-red-200/50 rounded text-red-900 text-left">
+                                <p className="text-[8px] uppercase font-bold text-red-950/50">Failure Reason</p>
+                                <p className="text-xs font-semibold leading-normal mt-0.5">{failedTx.errorDetails}</p>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                   <div className="space-y-4 text-right">

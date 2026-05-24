@@ -148,14 +148,14 @@ export default function CartPage() {
                   <div className="flex justify-between items-end">
                     <div className="flex items-center border border-amber-900/10">
                       <button 
-                        onClick={() => updateQuantity(item.id, -25)}
+                        onClick={() => updateQuantity(item.id, -1)}
                         className="w-8 h-8 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
                       >
                         <Minus size={12} />
                       </button>
                       <span className="w-10 text-center text-xs font-medium text-amber-950">{item.quantity}</span>
                       <button 
-                        onClick={() => updateQuantity(item.id, 25)}
+                        onClick={() => updateQuantity(item.id, 1)}
                         className="w-8 h-8 flex items-center justify-center hover:bg-amber-50 transition-colors text-amber-900"
                       >
                         <Plus size={12} />

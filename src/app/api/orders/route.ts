@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         where: { id: orderId },
         include: {
           customer: {
-            select: { name: true, email: true, addresses: true },
+            select: { id: true, name: true, email: true, role: true, addresses: true },
           },
           transactions: true,
         },
@@ -48,14 +48,15 @@ export async function GET(req: Request) {
     }
 
     try {
-      const rlsClient = prisma.$withUser(userId);
-      const orders = await rlsClient.order.findMany({
+      const orders = await prisma.order.findMany({
         where: { customerId: customerUid },
         include: {
           customer: {
             select: {
+              id: true,
               name: true,
               email: true,
+              role: true,
               addresses: true,
             },
           },
@@ -79,13 +80,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const rlsClient = prisma.$withUser(userId);
-    const orders = await rlsClient.order.findMany({
+    const orders = await prisma.order.findMany({
       include: {
         customer: {
           select: {
+            id: true,
             name: true,
             email: true,
+            role: true,
             addresses: true,
           },
         },

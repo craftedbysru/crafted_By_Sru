@@ -83,7 +83,7 @@ export default function CheckoutButton({
           try {
             // 3. Verify payment with timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout (more generous for DB processing)
 
             const verifyRes = await fetch("/api/payment/verify", {
               method: "POST",
@@ -112,19 +112,23 @@ export default function CheckoutButton({
               if (onSuccess) {
                 onSuccess(result.orderId);
               } else {
-                router.push(`/orders/${result.orderId}`);
+                router.push(`/checkout/status?id=${result.orderId}&status=success`);
               }
             }
           } catch (error: any) {
             console.error("Verification error:", error);
             const msg = error.name === 'AbortError' ? "Verification timed out. Please check your account section in a few minutes." : (error.message || "Unknown error");
-            router.push(`/order-failure/${dbOrderId}?error=${encodeURIComponent(msg)}`);
+            router.push(`/checkout/status?id=${dbOrderId}&status=failed&error=${encodeURIComponent(msg)}`);
           }
         },
         modal: {
           ondismiss: function() {
             setLoading(false);
-          }
+            router.push(`/checkout/status?id=${dbOrderId}&status=dismissed`);
+          },
+          // Razorpay native timeout for the modal (in seconds)
+          // 300 seconds = 5 minutes is a good production default
+          timeout: 300,
         },
         prefill: {
           name: `${orderData.shippingAddress.firstName} ${orderData.shippingAddress.lastName}`,
@@ -139,13 +143,15 @@ export default function CheckoutButton({
       const rzp = new window.Razorpay(options);
       
       rzp.on('payment.failed', async function (response: any) {
-        console.error("Payment failure details:", JSON.stringify(response.error, null, 2));
+        console.warn("Payment failure handled elegantly:", JSON.stringify(response.error, null, 2));
         const err = response.error || {};
+        const failedPaymentId = err.metadata?.payment_id || null;
+        const failedOrderId = err.metadata?.order_id || null;
         
         // Don't close the modal if you want them to be able to try another method, 
         // but the user says "website still shows the razorpay pop-up ... what to do"
-        // If we want to force them to the failure page:
-        // rzp.close(); 
+      // If we want to force them to the failure page:
+      if (typeof rzp.close === 'function') rzp.close(); 
         
         try {
           // Record failure in DB
@@ -154,7 +160,9 @@ export default function CheckoutButton({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               orderId: dbOrderId,
-              errorDetails: err
+              errorDetails: err,
+              providerPaymentId: failedPaymentId,
+              providerOrderId: failedOrderId
             })
           });
         } catch (e) {
@@ -166,7 +174,7 @@ export default function CheckoutButton({
         
         toast.error(`Payment failed: ${desc}`);
         setLoading(false);
-        router.push(`/order-failure/${dbOrderId}?code=${code}&desc=${encodeURIComponent(desc)}`);
+        router.push(`/checkout/status?id=${dbOrderId}&status=failed&code=${code}&desc=${encodeURIComponent(desc)}`);
       });
 
       rzp.open();

@@ -47,7 +47,7 @@ export async function sendEmail({ to, subject, html, type }: { to: string, subje
   const resend = await getResend();
   if (resend) {
     try {
-      const fromEmail = process.env.RESEND_FROM_EMAIL || "concierge@craftedbysru.com";
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "concierge@craftedbysru.in";
       const fromName = process.env.RESEND_FROM_NAME || "Crafted by Sru";
       
       const { data, error } = await resend.emails.send({
@@ -57,12 +57,12 @@ export async function sendEmail({ to, subject, html, type }: { to: string, subje
         html,
       });
       if (error) {
-        console.error("[RESEND ERROR]", JSON.stringify(error, null, 2));
+        console.error("Resend error:", error);
         return { success: false, error };
       }
       return { success: true, messageId: data?.id };
     } catch (err) {
-      console.error("[RESEND EXECUTION FAILED]", err);
+      console.error("Resend execution failed:", err);
       return { success: false, error: err };
     }
   }

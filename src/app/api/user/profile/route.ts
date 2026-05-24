@@ -6,7 +6,7 @@ import { z } from "zod";
 const profileSchema = z.object({
   firstName: z.string().min(1).max(50),
   lastName: z.string().min(1).max(50),
-  phone: z.string().min(10).max(15),
+  phone: z.string().min(10).max(20),
 });
 
 export async function GET() {

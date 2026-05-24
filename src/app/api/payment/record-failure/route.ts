@@ -6,6 +6,8 @@ import { z } from "zod";
 const recordFailureSchema = z.object({
   orderId: z.string().min(1),
   errorDetails: z.any().optional(),
+  providerOrderId: z.string().nullable().optional(),
+  providerPaymentId: z.string().nullable().optional(),
 });
 
 export async function POST(request: Request) {
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { orderId, errorDetails } = recordFailureSchema.parse(body);
+    const { orderId, errorDetails, providerOrderId, providerPaymentId } = recordFailureSchema.parse(body);
     const userId = session.user?.id!;
 
     const rlsClient = prisma.$withUser(userId);
@@ -37,6 +39,8 @@ export async function POST(request: Request) {
           amount: 0, // No payment made
           status: "failed",
           provider: "razorpay",
+          providerOrderId: providerOrderId || null,
+          providerPaymentId: providerPaymentId || null,
           errorDetails: JSON.stringify(errorDetails),
           metadata: {
             userAgent: request.headers.get("user-agent"),

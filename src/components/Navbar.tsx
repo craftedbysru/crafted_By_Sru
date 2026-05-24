@@ -104,8 +104,8 @@ export const Navbar = () => {
   return (
     <>
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-6 py-4 flex items-center justify-between",
-      isScrolled ? "bg-bg-card shadow-md border-b border-border-subtle py-3" : "bg-transparent"
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-6 flex items-center justify-between bg-white border-b border-amber-900/10 shadow-sm",
+      isScrolled ? "py-3" : "py-4"
     )}>
       <Link href="/" className="flex items-center gap-2">
         <div className="flex flex-col">

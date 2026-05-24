@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "motion/react";
-import { Package, User, LogOut, ChevronRight, ShoppingBag, Trash2 } from "lucide-react";
+import { Package, User, LogOut, ChevronRight, ShoppingBag, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getPlaceholderImage } from "@/lib/images";
+import { countryCodes, parsePhone } from "@/lib/countryCodes";
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
@@ -15,6 +16,8 @@ export default function AccountPage() {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");
+  const [profileCountryCode, setProfileCountryCode] = useState("+91");
+  const [addressCountryCode, setAddressCountryCode] = useState("+91");
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
@@ -36,6 +39,7 @@ export default function AccountPage() {
     country: "India"
   });
   const [isValidatingPincode, setIsValidatingPincode] = useState(false);
+  const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const validatePincode = async () => {
@@ -89,10 +93,12 @@ export default function AccountPage() {
       const res = await fetch("/api/user/profile");
       if (res.ok) {
         const data = await res.json();
+        const parsed = parsePhone(data.phone || "");
+        setProfileCountryCode(parsed.code);
         setProfile({
           firstName: data.firstName || data.name?.split(" ")[0] || "",
           lastName: data.lastName || data.name?.split(" ").slice(1).join(" ") || "",
-          phone: data.phone || "",
+          phone: parsed.number,
           email: data.email || ""
         });
       }
@@ -120,6 +126,30 @@ export default function AccountPage() {
     }
   };
 
+  const handleSyncPayment = async (orderId: string) => {
+    if (syncingOrderId) return;
+    setSyncingOrderId(orderId);
+    try {
+      const res = await fetch("/api/payment/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        await fetchData();
+      } else {
+        toast.error("Failed to synchronize payment details.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting with the sync service.");
+    } finally {
+      setSyncingOrderId(null);
+    }
+  };
+
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isValidatingPincode) {
@@ -133,7 +163,11 @@ export default function AccountPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAddress),
+        body: JSON.stringify({
+          ...newAddress,
+          name: `${profile.firstName} ${profile.lastName}`,
+          phone: `${profileCountryCode}${profile.phone.replace(/\D/g, "")}`
+        }),
       });
 
       if (response.ok) {
@@ -152,9 +186,11 @@ export default function AccountPage() {
 
   const handleEditAddress = (address: any) => {
     setAddressToEdit(address.id);
+    const parsed = parsePhone(address.phone || "");
+    setAddressCountryCode(parsed.code);
     setNewAddress({
       name: address.name || "",
-      phone: address.phone || "",
+      phone: parsed.number,
       street: address.street || "",
       street2: address.street2 || "",
       street3: address.street3 || "",
@@ -191,7 +227,7 @@ export default function AccountPage() {
         body: JSON.stringify({
           firstName: profile.firstName,
           lastName: profile.lastName,
-          phone: profile.phone
+          phone: `${profileCountryCode}${profile.phone.replace(/\D/g, "")}`
         }),
       });
 
@@ -344,11 +380,22 @@ export default function AccountPage() {
                                className="text-[10px] uppercase tracking-widest font-bold text-amber-900 border-b border-amber-900/20 pb-0.5 hover:border-amber-950 transition-all block mt-2"
                              >
                                View Details
-                             </Link>
+                              </Link>
+                              {(order.paymentStatus === "unpaid" || order.paymentStatus === "failed") && (
+                                <button
+                                  onClick={() => handleSyncPayment(order.id)}
+                                  disabled={syncingOrderId !== null}
+                                  className="text-[10px] uppercase tracking-widest font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1.5 mt-2 transition-all cursor-pointer"
+                                >
+                                  <RefreshCw size={10} className={syncingOrderId === order.id ? "animate-spin" : ""} />
+                                  {syncingOrderId === order.id ? "Syncing..." : "Sync Status"}
+                                </button>
+                              )}
+                              
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                           <div className="flex flex-wrap gap-4">
                             {order.items.map((item: any, idx: number) => (
                               <div key={idx} className="flex gap-4 items-center bg-white p-3 border border-amber-900/5">
@@ -375,6 +422,52 @@ export default function AccountPage() {
                                {order.shippingAddress?.street2 && <p>{order.shippingAddress?.street2}</p>}
                                <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode || order.shippingAddress?.zipCode}</p>
                                <p className="mt-1 font-bold">{order.phone || order.shippingAddress?.phone}</p>
+                             </div>
+                          </div>
+                          <div className="space-y-3 bg-amber-50/20 p-4 border border-amber-900/5 rounded-sm">
+                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-900/40">Transaction Details</p>
+                             <div className="text-xs text-amber-900/60 leading-relaxed space-y-2">
+                               <div>
+                                 <p className="text-[8px] uppercase font-bold text-amber-900/40">Razorpay Order ID</p>
+                                 <p className="font-mono text-[9px] text-amber-950 truncate max-w-[180px]">
+                                   {(() => {
+                                     const activeTx = order.transactions?.find((t: any) => t.providerPaymentId) || order.transactions?.[0];
+                                     return activeTx?.providerOrderId || order.transactions?.[0]?.providerOrderId || "N/A";
+                                   })()}
+                                 </p>
+                               </div>
+                               <div>
+                                 <p className="text-[8px] uppercase font-bold text-amber-900/40">Payment ID</p>
+                                 <p className="font-mono text-[9px] text-amber-950 truncate max-w-[180px]">
+                                   {(() => {
+                                     const activeTx = order.transactions?.find((t: any) => t.providerPaymentId) || order.transactions?.[0];
+                                     return activeTx?.providerPaymentId || "N/A";
+                                   })()}
+                                 </p>
+                               </div>
+                               {(() => {
+                                 const failedTx = order.transactions?.find((t: any) => t.status?.toLowerCase() === "failed" || t.errorDetails);
+                                 if (failedTx && failedTx.errorDetails) {
+                                   try {
+                                     const errObj = JSON.parse(failedTx.errorDetails);
+                                     const desc = errObj.description || errObj.reason || errObj.message || failedTx.errorDetails;
+                                     return (
+                                       <div className="mt-3 bg-red-50/50 p-2.5 border border-red-200/40 rounded text-red-900">
+                                         <p className="text-[8px] uppercase font-bold text-red-900/40 mb-1">Failure Reason</p>
+                                         <p className="text-[10px] font-medium leading-relaxed">{desc}</p>
+                                       </div>
+                                     );
+                                   } catch (e) {
+                                     return (
+                                       <div className="mt-3 bg-red-50/50 p-2.5 border border-red-200/40 rounded text-red-900">
+                                         <p className="text-[8px] uppercase font-bold text-red-900/40 mb-1">Failure Reason</p>
+                                         <p className="text-[10px] font-medium leading-relaxed">{failedTx.errorDetails}</p>
+                                       </div>
+                                     );
+                                   }
+                                 }
+                                 return null;
+                               })()}
                              </div>
                           </div>
                         </div>
@@ -489,14 +582,27 @@ export default function AccountPage() {
 
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-widest font-bold text-amber-900/40">Mobile Number</label>
-                      <input 
-                        required
-                        type="tel" 
-                        value={profile.phone}
-                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                        className="w-full bg-transparent border-b border-amber-900/20 py-3 focus:outline-none focus:border-amber-900 transition-colors text-amber-950"
-                        placeholder="+91 98765 43210"
-                      />
+                      <div className="flex gap-2 border-b border-amber-900/20 py-1 items-center focus-within:border-amber-900 transition-colors">
+                        <select
+                          value={profileCountryCode}
+                          onChange={(e) => setProfileCountryCode(e.target.value)}
+                          className="bg-transparent text-amber-950 font-bold py-2 focus:outline-none cursor-pointer border-r border-amber-900/10 pr-2 text-xs"
+                        >
+                          {countryCodes.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.code}
+                            </option>
+                          ))}
+                        </select>
+                        <input 
+                          required
+                          type="tel" 
+                          value={profile.phone}
+                          onChange={(e) => setProfile({...profile, phone: e.target.value.replace(/\D/g, "")})}
+                          className="w-full bg-transparent py-2 focus:outline-none text-amber-950 text-sm"
+                          placeholder="9876543210"
+                        />
+                      </div>
                     </div>
 
                     <button 

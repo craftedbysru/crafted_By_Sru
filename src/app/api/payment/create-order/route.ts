@@ -55,6 +55,18 @@ export async function POST(request: Request) {
 
     const razorpayOrder = await razorpay.orders.create(options);
 
+    // 3. Save Razorpay Order ID to a pending transaction
+    await rlsClient.transaction.create({
+      data: {
+        orderId: dbOrder.id,
+        amount: orderData.total,
+        currency: orderData.currency || "INR",
+        status: "pending",
+        provider: "razorpay",
+        providerOrderId: razorpayOrder.id
+      }
+    });
+
     return NextResponse.json({ 
       razorpayOrder, 
       dbOrderId: dbOrder.id 

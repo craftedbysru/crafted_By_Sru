@@ -150,8 +150,11 @@ function CatalogContent() {
   const addToCart = (product: any) => {
     const cart = JSON.parse(localStorage.getItem("sru_cart") || "[]");
     const existingIdx = cart.findIndex((i: any) => i.id === product.id);
-    if (existingIdx > -1) cart[existingIdx].quantity += 1;
-    else cart.push({ ...product, quantity: 1 });
+    if (existingIdx > -1) {
+      cart[existingIdx].quantity += 1;
+    } else {
+      cart.push({ ...product, quantity: 25 });
+    }
     localStorage.setItem("sru_cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("sru_cart_change"));
     toast.success(`${product.name} added to cart`);
