@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { ShoppingBag, ChevronRight, ArrowLeft, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -17,7 +17,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(1); // 1: Shipping, 3: Payment (Step 2 removed)
+  const [step, setStep] = useState(1); // 1: Shipping, 2: Payment
   const [checkoutCountryCode, setCheckoutCountryCode] = useState("+91");
   
   const [address, setAddress] = useState({
@@ -380,49 +380,6 @@ export default function CheckoutPage() {
             )}
 
             {step === 2 && (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-10"
-              >
-                <div className="space-y-6">
-                  <h3 className="font-serif text-2xl text-amber-950">Delivery Method</h3>
-                  <div className="space-y-4">
-                    <div 
-                      className="w-full p-8 border-2 border-amber-950 bg-bg-card flex justify-between items-center"
-                    >
-                      <div className="flex gap-6 items-center">
-                        <div className="w-6 h-6 flex items-center justify-center text-amber-950">
-                          <ShoppingBag size={24} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm font-bold uppercase tracking-widest text-amber-950">Express Heritage Delivery</p>
-                          <p className="text-[10px] text-amber-900/40">Estimated delivery: 10-15 business days</p>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-amber-950">
-                        {shippingInfo.text || `₹${shippingCost.toLocaleString()}`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => setStep(3)}
-                  className="w-full py-5 bg-amber-950 text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-amber-900 transition-all"
-                >
-                  Continue to Payment
-                </button>
-                <button 
-                  onClick={() => setStep(1)}
-                  className="w-full py-3 text-[10px] uppercase tracking-widest text-amber-900/40 font-bold hover:text-amber-950 transition-colors"
-                >
-                  Back to Shipping
-                </button>
-              </motion.div>
-            )}
-
-            {step === 3 && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}

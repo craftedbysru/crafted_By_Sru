@@ -732,7 +732,7 @@ export default function MerchantDashboard() {
           <p className="text-[8px] uppercase tracking-[0.3em] text-amber-900/40 mt-1">Curated Heritage</p>
         </div>
 
-        <nav className="flex-1 p-6 space-y-2">
+        <nav className="flex-1 overflow-y-auto p-6 space-y-2">
           <SidebarLink 
             icon={<LayoutDashboard size={18} />} 
             label="Dashboard" 
@@ -807,19 +807,16 @@ export default function MerchantDashboard() {
           )}
         </nav>
 
-        <div className="p-6 border-t border-amber-900/5 space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-[8px] uppercase tracking-widest font-bold text-amber-900/40">Heritage Mode</span>
-          </div>
+        <div className="p-4 border-t border-amber-900/10 shrink-0 bg-white">
           <button 
             onClick={() => {
               localStorage.removeItem("sru_cart");
               window.dispatchEvent(new Event("sru_cart_change"));
               signOut({ callbackUrl: "/" });
             }}
-            className="flex items-center gap-3 text-amber-900/40 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded text-amber-900/60 hover:text-red-600 hover:bg-red-50/50 transition-colors text-xs uppercase tracking-widest font-bold w-full"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             Logout
           </button>
         </div>
