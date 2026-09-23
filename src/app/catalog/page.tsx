@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingBag, Search, SlidersHorizontal, Plus, ChevronRight } from "lucide-react";
+import { ShoppingBag, Search, SlidersHorizontal, Plus, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getPlaceholderImage } from "@/lib/images";
@@ -24,15 +24,23 @@ function CatalogContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "All";
   const initialSort = searchParams.get("sort") || "newest";
+  const initialSearch = searchParams.get("search") || searchParams.get("q") || "";
 
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedOffer, setSelectedOffer] = useState<string | null>(searchParams.get("offer"));
   const [sortBy, setSortBy] = useState(initialSort);
+
+  useEffect(() => {
+    const q = searchParams.get("search") || searchParams.get("q");
+    if (q !== null) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (initialCategory) {
@@ -45,6 +53,7 @@ function CatalogContent() {
       setSortBy(initialSort);
     }
   }, [initialSort]);
+
   useEffect(() => {
     if (searchParams.get("offer")) {
       setSelectedOffer(searchParams.get("offer"));
@@ -174,8 +183,28 @@ function CatalogContent() {
             </p>
           </div>
           
-          <div className="flex flex-col gap-4 w-full md:w-auto">
-             {/* Search input removed as global search is preferred */}
+          <div className="flex flex-col gap-2 w-full md:w-80 lg:w-96">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/40 group-focus-within:text-amber-900 transition-colors" size={16} />
+              <input 
+                type="text" 
+                id="catalog-search-input"
+                placeholder="Search collection (e.g. Brass, Potli, Diya)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border border-amber-900/15 pl-11 pr-9 py-3 text-xs tracking-wide font-medium text-amber-950 placeholder:text-amber-950/40 outline-none focus:border-amber-900/40 focus:ring-1 focus:ring-amber-900/20 transition-all shadow-sm rounded-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-amber-900/40 hover:text-amber-900 transition-colors"
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
         
@@ -305,9 +334,39 @@ function CatalogContent() {
             )}
           </AnimatePresence>
 
+      {searchQuery && (
+        <div className="flex items-center justify-between gap-4 p-4 bg-amber-900/5 border border-amber-900/10 mb-8">
+          <div className="flex items-center gap-2 text-xs text-amber-950 font-serif">
+            <Search size={14} className="text-amber-900/60 shrink-0" />
+            <span>Showing results for &ldquo;<strong>{searchQuery}</strong>&rdquo; &mdash; {processedProducts.length} {processedProducts.length === 1 ? 'creation' : 'creations'} found</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="text-[10px] uppercase tracking-widest font-bold text-amber-900 hover:text-amber-950 underline transition-colors shrink-0"
+          >
+            Clear Search
+          </button>
+        </div>
+      )}
+
       {processedProducts.length === 0 ? (
-        <div className="py-40 text-center">
-          <p className="text-amber-900/30 text-[10px] uppercase tracking-[0.5em] font-bold">No items match your curation</p>
+        <div className="py-32 text-center flex flex-col items-center justify-center gap-4">
+          <p className="text-amber-900/40 text-[10px] uppercase tracking-[0.4em] font-bold">
+            {searchQuery ? `No items found matching "${searchQuery}"` : "No items match your curation"}
+          </p>
+          <p className="text-amber-900/60 font-serif text-sm max-w-sm">
+            Try adjusting your search terms, exploring different categories, or resetting active filters.
+          </p>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="mt-2 px-6 py-2.5 bg-amber-950 text-white text-[10px] uppercase tracking-widest font-bold hover:bg-amber-900 transition-colors"
+            >
+              Clear Search Query
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">

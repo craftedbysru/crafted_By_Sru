@@ -23,6 +23,12 @@ const ovo = Ovo({
 export const metadata: Metadata = {
   title: "Crafted by Sru",
   description: "Curated heritage creations for your home and lifestyle.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
 };
 
 import { Providers } from "@/components/Providers";
@@ -35,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

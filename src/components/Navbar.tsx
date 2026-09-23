@@ -125,7 +125,18 @@ export const Navbar = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <button 
+            type="button"
+            id="navbar-search-btn"
+            onClick={() => setIsSearchOpen(true)} 
+            aria-label="Search catalog"
+            className="p-2 hover:bg-amber-900/10 rounded-full transition-colors text-amber-900 flex items-center gap-1.5"
+            title="Search"
+          >
+            <Search size={18} />
+            <span className="hidden lg:inline text-[10px] uppercase tracking-widest text-amber-900/60 font-medium">Search</span>
+          </button>
           <Link href="/cart" className="p-2 hover:bg-amber-900/10 rounded-full transition-colors relative text-amber-900">
             <ShoppingBag size={18} />
             {cartCount > 0 && (
@@ -164,6 +175,17 @@ export const Navbar = () => {
               exit={{ opacity: 0, height: 0 }}
               className="absolute top-full left-0 right-0 bg-[#f9f7f2] border-b border-border-subtle p-6 md:hidden flex flex-col gap-4 overflow-hidden"
             >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsSearchOpen(true);
+                }}
+                className="flex items-center gap-3 text-[11px] uppercase tracking-widest text-amber-950 font-bold p-3 bg-amber-900/5 hover:bg-amber-900/10 transition-colors border border-amber-900/10 text-left w-full"
+              >
+                <Search size={16} className="text-amber-900/70" />
+                <span>Search Gifts & Collections...</span>
+              </button>
               {userRole === "merchant" ? (
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-[10px] uppercase tracking-widest text-amber-900 font-bold">Dashboard</Link>
               ) : (
@@ -208,19 +230,70 @@ export const Navbar = () => {
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-4 mb-10">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery.trim()) {
+                      setIsSearchOpen(false);
+                      router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+                    }
+                  }}
+                  className="flex items-center gap-3 mb-6"
+                >
                   <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/30 group-focus-within:text-amber-900/60 transition-colors" size={16} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/40 group-focus-within:text-amber-900 transition-colors" size={18} />
                     <input 
                       autoFocus
                       type="text" 
-                      placeholder="Search for heritage gifts, artisan crafts..."
+                      placeholder="Search heritage gifts, brass artifacts, potlis, silver favors..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full text-sm font-medium text-amber-950 placeholder:text-amber-950/20 border border-amber-900/10 bg-amber-50/30 px-12 py-3.5 outline-none focus:border-amber-900/30 focus:bg-white transition-all shadow-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && searchQuery.trim()) {
+                          e.preventDefault();
+                          setIsSearchOpen(false);
+                          router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+                        }
+                      }}
+                      className="w-full text-sm font-medium text-amber-950 placeholder:text-amber-950/40 border border-amber-900/15 bg-white pl-12 pr-10 py-3.5 outline-none focus:border-amber-900/50 focus:ring-1 focus:ring-amber-900/20 transition-all shadow-sm rounded-none"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-amber-900/40 hover:text-amber-900"
+                        title="Clear search"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
-                </div>
+                  <button
+                    type="submit"
+                    className="px-6 py-3.5 bg-amber-950 text-white text-[11px] uppercase tracking-widest font-bold hover:bg-amber-900 transition-colors shrink-0"
+                  >
+                    Search
+                  </button>
+                </form>
+
+                {searchQuery.length === 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mb-8">
+                    <span className="text-[9px] uppercase tracking-widest text-amber-900/50 font-bold mr-1">Popular:</span>
+                    {["Brass Diya", "Silk Potli", "Silver Leaf", "Kundan Box", "Dry Fruit Box"].map((term) => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          router.push(`/catalog?search=${encodeURIComponent(term)}`);
+                        }}
+                        className="text-[9px] uppercase tracking-widest px-3 py-1.5 bg-amber-900/5 hover:bg-amber-900/10 text-amber-950 font-medium transition-colors border border-amber-900/10"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                   <AnimatePresence mode="popLayout">
